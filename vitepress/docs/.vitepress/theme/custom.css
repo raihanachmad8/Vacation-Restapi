@@ -1,0 +1,32 @@
+/* .vitepress/theme/custom.css */
+:root {
+    --vp-layout-max-width: 1680px;
+}
+
+.content-container {
+    max-width: 100% !important;
+}
+
+/* min-width: 1440px same as original min-width: 960px */
+@media (min-width: 1440px) {
+    .VPSidebar {
+        padding-left: 32px !important;
+        width: var(--vp-sidebar-width) !important;
+    }
+    .VPContent.has-sidebar {
+        padding-left: var(--vp-sidebar-width) !important;
+        padding-right: 0 !important;
+    }
+}
+
+/* Add additional min-width: 1680px */
+@media (min-width: 1680px) {
+    .VPSidebar {
+        padding-left: calc((100% - (var(--vp-layout-max-width) - 64px)) / 2) !important;
+        width: calc((100% - (var(--vp-layout-max-width) - 64px)) / 2 + var(--vp-sidebar-width) - 32px) !important;
+    }
+    .VPContent.has-sidebar {
+        padding-left: calc((100vw - var(--vp-layout-max-width)) / 2 + var(--vp-sidebar-width)) !important;
+        padding-right: calc((100vw - var(--vp-layout-max-width)) / 2) !important;
+    }
+}
