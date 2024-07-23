@@ -1,0 +1,50 @@
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/rezork/src/app
+      - ./node_modules:/rezork/src/app/node_modules
+    command: npm run start:dev
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-vacation-restapi}
+      MYSQL_USER: ${DB_USER:-root-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root-password}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root-password}
+      MYSQL_ROOT_HOST: ${DB_HOST:-localhost}
+      MYSQL_ROOT_PORT: ${DB_PORT:-3306}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - vacation-api
+
+  adminer:
+    image: adminer:latest
+    hostname: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DESIGN: hydra
+    volumes:
+      - ./docker/adminer/adminer.css:/var/www/html/designs/hydra/adminer.css
+    networks:
+      - vacation-api
+
+networks:
+  vacation-api:
+    driver: bridge
