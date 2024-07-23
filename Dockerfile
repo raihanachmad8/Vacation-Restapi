@@ -25,8 +25,11 @@ ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /rezork/src/app
 
-COPY --from=development /rezork/src/app/ ./
+COPY --from=development /rezork/src/app/package*.json ./
+COPY --from=development /rezork/src/app/dist ./dist
+
+RUN npm ci --only=production
 
 EXPOSE ${port}
 
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
