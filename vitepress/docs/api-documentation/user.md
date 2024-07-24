@@ -15,9 +15,103 @@ aside: false
 <DividePage :top="63">
 <template #left>
 
+## Register User
+
+The register allows users to register themselves by providing their fullname, email username and password. 
+
+</template>
+<template #right>
+
+::: code-group
+
+```curl
+curl -X POST http://yourdomain.com/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+    "fullname": "yourname",
+    "email"   : "yourmail@example.com",
+    "username": "yourusername", 
+    "password": "yourpassword"
+}'
+
+```
+
+:::
+
+<div style="padding: 10px 30px; border: 1px solid gray; border-radius:.4rem;">
+
+Sample Response
+::: code-group
+
+```201
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 201,
+    "message": "User successfully registered",
+    "data": {
+        "access_token": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWNhZDY2ZDktZDUzMC00OWRkLTkyMTgtOTYzMGM2NWI0MjBmIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6Ik1lbWJlciIsInRpbWVzdGFtcCI6MTcyMTgzOTE0MzUzMCwiaWF0IjoxNzIxODM5MTQzLCJleHAiOjE3MjE4NDk5NDN9.J9P_A4L0pmvvGgvRccEaa6eFIbrZMFCpbA67qhTsH5g",
+            "expires_in": "2024-07-24T19:39:03.531Z"
+        },
+        "refresh_token": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWNhZDY2ZDktZDUzMC00OWRkLTkyMTgtOTYzMGM2NWI0MjBmIiwidGltZXN0YW1wIjoxNzIxODM5MTQzNTMyLCJpYXQiOjE3MjE4MzkxNDMsImV4cCI6MTcyMjA5ODM0M30.einDEmgscRq-pqIzD1ZCl1uP18OrPDif88veSG1bWdU",
+            "expires_in": "2024-07-27T16:39:03.532Z"
+        }
+    }
+}
+```
+
+```400
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 400,
+    "message":  "Bad Request",
+    "errors": {
+        "username": [
+            "The username field is required."
+        ],
+        "password": [
+            "The password field is required."
+        ]
+    }
+}
+```
+
+```403
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 403
+    "message": "Forbiden"
+}
+```
+
+```404
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 404,
+    "message":  "Not Found",
+}
+```
+
+```500
+{
+    "statusCode": 500,
+    "message": "Internal Server Error",
+}
+```
+
+:::
+</div>
+
+</template>
+</DividePage>
+
+<DividePage :top="63">
+<template #left>
+
 ## Login User
 
-The login endpoint allows a user to authenticate themselves by providing their email and password. Upon successful authentication, the server returns a token that can be used for subsequent authenticated requests.
+The login endpoint allows a user to authenticate themselves by providing their username and password. Upon successful authentication, the server returns a token that can be used for subsequent authenticated requests.
 
 </template>
 <template #right>
@@ -38,32 +132,36 @@ curl -X POST http://yourdomain.com/api/auth/login \
 
 <div style="padding: 10px 30px; border: 1px solid gray; border-radius:.4rem;">
 
+
 Sample Response
 ::: code-group
 
 ```200
 {
-    "success": true,
-    "message": "Login successful",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 200,
+    "message": "User successfully logged in",
     "data": {
-        "user": {
-            "user_id": "123e4567-e89b-12d3-a456-426614174000",
-            "full_name": "John Doe",
-            "email": "user@example.com",
-            "username": "johndoe"
+        "access_token": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWNhZDY2ZDktZDUzMC00OWRkLTkyMTgtOTYzMGM2NWI0MjBmIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6Ik1lbWJlciIsInRpbWVzdGFtcCI6MTcyMTgzOTE0MzUzMCwiaWF0IjoxNzIxODM5MTQzLCJleHAiOjE3MjE4NDk5NDN9.J9P_A4L0pmvvGgvRccEaa6eFIbrZMFCpbA67qhTsH5g",
+            "expires_in": "2024-07-24T19:39:03.531Z"
         },
-        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "refresh_token": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZWNhZDY2ZDktZDUzMC00OWRkLTkyMTgtOTYzMGM2NWI0MjBmIiwidGltZXN0YW1wIjoxNzIxODM5MTQzNTMyLCJpYXQiOjE3MjE4MzkxNDMsImV4cCI6MTcyMjA5ODM0M30.einDEmgscRq-pqIzD1ZCl1uP18OrPDif88veSG1bWdU",
+            "expires_in": "2024-07-27T16:39:03.532Z"
+        }
     }
 }
 ```
 
 ```400
 {
-    "success": false,
-    "message": "Bad Request",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 400,
+    "message":  "Bad Request",
     "errors": {
-        "email": [
-            "The email field is required."
+        "username": [
+            "The username field is required."
         ],
         "password": [
             "The password field is required."
@@ -74,109 +172,34 @@ Sample Response
 
 ```403
 {
-    "success": false,
-    "message": "Forbidden",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 403
+    "message": "Forbiden"
 }
 ```
 
 ```404
 {
-    "success": false,
-    "message": "Not Found",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 404,
+    "message":  "Not Found",
 }
 ```
 
 ```500
 {
-    "success": false,
+    "statusCode": 500,
     "message": "Internal Server Error",
 }
 ```
 
 :::
+
 </div>
 
 </template>
 </DividePage>
 
-
-<DividePage :top="63">
-<template #left>
-
-## Get User
-
-The get user endpoint retrieves the authenticated user's information. This requires a valid token obtained from the login step.
-
-</template>
-<template #right>
-
-::: code-group
-
-```curl
-curl -X GET http://yourdomain.com/api/user \
--H "Content-Type: application/json" \
--H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-```
-
-:::
-
-<div style="padding: 10px 30px; border: 1px solid gray; border-radius:.4rem;">
-
-Sample Response
-::: code-group
-
-```200
-{
-    "success": true,
-    "data": {
-        "user": {
-            "user_id": "123e4567-e89b-12d3-a456-426614174000",
-            "role_id": "1b2b3b4b-5b6b-7b8b-9bab-cdedefababab",
-            "full_name": "John Doe",
-            "email": "user@example.com",
-            "username": "johndoe",
-            "phone": "123-456-7890",
-            "photo_url": "http://yourdomain.com/images/profile.jpg",
-            "created_at": "2023-07-15T12:34:56Z",
-            "updated_at": "2024-07-15T12:34:56Z"
-        }
-    }
-}
-```
-
-```401
-{
-    "success": false,
-    "message": "Unauthorized",
-}
-```
-
-```403
-{
-    "success": false,
-    "message": "Forbidden",
-}
-```
-
-```404
-{
-    "success": false,
-    "message": "Not Found",
-}
-```
-
-```500
-{
-    "success": false,
-    "message": "Internal Server Error",
-}
-```
-
-:::
-</div>
-
-</template>
-</DividePage>
 
 <DividePage :top="63">
 <template #left>
@@ -205,40 +228,117 @@ Sample Response
 
 ```200
 {
-    "success": true,
-    "message": "Logout successful"
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 200,
+    "message": "User successfully logged out",
 }
 ```
 
 ```401
 {
-    "success": false,
-    "message": "Unauthorized",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 400,
+    "message":  "Unautorized"
 }
 ```
 
 ```403
 {
-    "success": false,
-    "message": "Forbidden",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 403
+    "message": "Forbiden"
 }
 ```
 
 ```404
 {
-    "success": false,
-    "message": "Not Found",
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 404,
+    "message":  "Not Found",
 }
 ```
 
 ```500
 {
-    "success": false,
+    "statusCode": 500,
     "message": "Internal Server Error",
 }
 ```
 
 :::
+
+</div>
+
+</template>
+</DividePage>
+
+
+<DividePage :top="63">
+<template #left>
+
+## Refresh Token User
+
+The Refresh token endpoint allows a user to invalidate their authentication token, and renew the token for access data.
+
+</template>
+<template #right>
+
+::: code-group
+
+```curl
+curl -X POST http://yourdomain.com/api/auth/logout \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+:::
+
+<div style="padding: 10px 30px; border: 1px solid gray; border-radius:.4rem;">
+
+Sample Response
+::: code-group
+
+```200
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 200,
+    "message": "Token successfully refreshed",
+}
+```
+
+```401
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 400,
+    "message":  "Unautorized"
+}
+```
+
+```403
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 403
+    "message": "Forbiden"
+}
+```
+
+```404
+{
+    "timestamp": "2024-07-24T16:34:05.337Z",
+    "statusCode": 404,
+    "message":  "Not Found",
+}
+```
+
+```500
+{
+    "statusCode": 500,
+    "message": "Internal Server Error",
+}
+```
+
+:::
+
 </div>
 
 </template>

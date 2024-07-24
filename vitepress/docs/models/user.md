@@ -10,53 +10,79 @@ The `User` model represents a user within the application, encompassing all esse
 
 [[toc]]
 
+## Table
+
+### users
+
+| Column     | Type      | Constraints                                           | Description                                                      |
+| ---------- | --------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| user_id    | CHAR(36)  | PRIMARY KEY, DEFAULT (UUID())                         | A universally unique identifier (UUID) for the user.             |
+| role       | ENUM      | DEFAULT 'Member'                                      | The role of the user, either 'Admin' or 'Member'.                |
+| fullname   | VARCHAR   | NOT NULL                                              | The full name of the user.                                       |
+| email      | VARCHAR   | NOT NULL, UNIQUE                                      | The user's email address, must be unique.                        |
+| username   | VARCHAR   | NOT NULL, UNIQUE                                      | The unique username chosen by the user.                          |
+| password   | VARCHAR   | NOT NULL                                              | The hashed password of the user.                                 |
+| salt       | VARCHAR   | NOT NULL                                              | The salt used for hashing the user's password.                   |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP                             | The timestamp indicating when the user account was created.      |
+| updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | The timestamp indicating when the user account was last updated. |
+
 ## Fields
 
 ### `user_id`
+
 - **Type**: string
 - **Format**: uuid
 - **Constraints**: primary key
 - **Description**: A universally unique identifier (UUID) for the user, ensuring each user has a distinct identifier within the system.
 
-### `role_id`
+### `role`
+
 - **Type**: string
-- **Format**: uuid
+- **Format**: enum('Admin', 'Member')
+- **Constraints**: default 'Member'
 - **Description**: Identifies the role associated with the user, dictating permissions and access levels.
 
-### `full_name`
+### `fullname`
+
 - **Type**: string
 - **Description**: The full name of the user, typically combining their first name and last name.
 
 ### `email`
+
 - **Type**: string
 - **Format**: email
-- Constraints: required, unique
+- **Constraints**: required, unique
 - **Description**: The user's email address, used for identification and communication purposes. Must be unique across all users.
 
 ### `username`
-- Type: string
-- Description: The unique username chosen by the user for login and identification purposes.
+
+- **Type**: string
+- **Constraints**: required, unique
+- **Description**: The unique username chosen by the user for login and identification purposes.
 
 ### `password`
-- Type: string
-- Constraints: required
-- Description: The hashed password of the user, stored securely for authentication.
+
+- **Type**: string
+- **Constraints**: required
+- **Description**: The hashed password of the user, stored securely for authentication.
+
+### `salt`
+
+- **Type**: string
+- **Constraints**: required
+- **Description**: The salt used for hashing the user's password, stored securely for authentication.
 
 ### `created_at`
-- Type: timestamp
-- Description: The timestamp indicating when the user account was created.
+
+- **Type**: timestamp
+- **Constraints**: default current_timestamp
+- **Description**: The timestamp indicating when the user account was created.
 
 ### `updated_at`
-- Type: timestamp
-- Description: The timestamp indicating when the user account was last updated.
 
-### `phone`
-- Type: string
-- Description: The phone number associated with the user, if provided.
-
-### `photo_url`
-- Type: text
-- Description: URL pointing to the user's profile picture or avatar.
+- **Type**: timestamp
+- **Constraints**: default current_timestamp on update current_timestamp
+- **Description**: The timestamp indicating when the user account was last updated.
 
 ## Description
 
