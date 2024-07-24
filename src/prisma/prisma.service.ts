@@ -42,8 +42,8 @@ export class PrismaService
         {
           emit: 'event',
           level: 'error',
-        }
-      ]
+        },
+      ],
     });
   }
 

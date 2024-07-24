@@ -29,15 +29,22 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  PersonalAccessToken PersonalAccessToken[]
+
   @@map("users")
 }
 
-model RefreshToken {
-  refresh_token String @id @unique
-  user_id       String
-  expires       DateTime
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+model PersonalAccessToken {
+  id                    Int      @id @default(autoincrement())
+  access_token          String   @unique @db.VarChar(400)
+  refresh_token         String   @unique @db.VarChar(255)
+  user_id               String
+  expires_access_token  DateTime
+  expires_refresh_token DateTime
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  User User? @relation(fields: [user_id], references: [user_id])
 
   @@map("refresh_tokens")
 }

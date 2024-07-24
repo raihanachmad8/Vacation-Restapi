@@ -1,8 +1,9 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as winston from 'winston';
+import { UserAgentMiddleware } from './middleware/user-agent.middleware';
 
 const logDir = path.join(__dirname, './../../logs');
 if (!fs.existsSync(logDir)) {
@@ -41,4 +42,9 @@ if (!fs.existsSync(logDir)) {
   ],
   exports: [],
 })
-export class CommonModule {}
+// export class CommonModule {} apply middleware
+export class CommonModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(UserAgentMiddleware).forRoutes('*');
+  }
+}
