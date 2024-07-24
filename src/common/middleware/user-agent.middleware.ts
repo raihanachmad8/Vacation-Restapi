@@ -9,11 +9,12 @@ export class UserAgentMiddleware implements NestMiddleware {
   constructor(@Inject(WINSTON_MODULE_PROVIDER) private logger: Logger) {}
   use(req: Request, res: Response, next: NextFunction) {
     const userAgent = req.headers['user-agent'] || 'unknown';
-    console.log(`User Agent: ${userAgent}`);
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     this.logger.info(`User Agent: ${userAgent}`, {
       userAgent,
       method: req.method,
       url: req.originalUrl,
+      ip,
     });
     next();
   }
