@@ -7,14 +7,13 @@ import {
   HttpStatus,
   UseGuards,
   Req,
-  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto, RegistrationDto } from './dto';
 import { Tokens } from './types';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { WebResponse } from 'src/models';
+import { WebResponse } from './../models';
 import { JwtAuthGuard, JwtRefreshAuthGuard } from './guards';
 
 @Controller('auth')
@@ -58,12 +57,5 @@ export class AuthController {
     );
 
     return new WebResponse<Tokens>('Token successfully refreshed', 200, token);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  @Get('user')
-  async user(@Req() req: Request): Promise<WebResponse> {
-    return new WebResponse('User details', 200, req['user']);
   }
 }

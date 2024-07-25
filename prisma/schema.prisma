@@ -44,7 +44,7 @@ model PersonalAccessToken {
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
 
-  User User? @relation(fields: [user_id], references: [user_id])
+  User User? @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("refresh_tokens")
 }

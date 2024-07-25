@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthDto, RegistrationDto } from './dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from './../prisma/prisma.service';
 import { JWTRefreshToken, JWTAccessToken, Tokens } from './types';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -62,7 +62,7 @@ export class AuthService {
 
       return { access_token, refresh_token };
     } else {
-      throw new BadRequestException('Invalid username or password');
+      throw new BadRequestException('Invalid credentials');
     }
   }
 
