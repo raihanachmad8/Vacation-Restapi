@@ -12,11 +12,7 @@ async function bootstrap() {
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new CustomValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(new CustomValidationPipe());
   app.use(cookieParser());
 
   await app.listen(8000);

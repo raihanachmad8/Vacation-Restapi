@@ -25,11 +25,7 @@ describe('AuthController (e2e)', () => {
     app = moduleFixture.createNestApplication();
 
     // Apply global settings
-    app.useGlobalPipes(new CustomValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+    app.useGlobalPipes(new CustomValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
 
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
@@ -173,7 +169,6 @@ describe('AuthController (e2e)', () => {
   });
 
   describe('/auth/refresh (POST)', () => {
-
     it('should refresh the token and return new tokens', async () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')

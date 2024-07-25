@@ -1,6 +1,5 @@
 import { Injectable, ValidationPipe, ValidationError } from '@nestjs/common';
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { error } from 'console';
 
 @Injectable()
 export class CustomValidationPipe extends ValidationPipe {
