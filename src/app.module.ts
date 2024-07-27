@@ -7,6 +7,7 @@ import { ArticleModule } from './article/article.module';
 import { FileStorageModule } from './file-storage/file-storage.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards';
+import { TagModule } from './tag/tag.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from './auth/guards';
     PrismaModule,
     ArticleModule,
     FileStorageModule,
+    TagModule,
   ],
   providers: [
     {

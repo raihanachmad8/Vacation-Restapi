@@ -2,11 +2,13 @@ import { Controller, Get, Param, Res } from '@nestjs/common';
 import { FileStorageService } from './file-storage.service';
 import { Response } from 'express';
 import mime from 'mime-types';
+import { Public } from 'src/common/decorators';
 
 @Controller('storage')
 export class FileStorageController {
   constructor(private readonly fileStorageService: FileStorageService) {}
 
+  @Public()
   @Get('public/articles/:filename')
   async getPublicArticleFile(
     @Param('filename') filename: string,

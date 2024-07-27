@@ -23,6 +23,7 @@ import { articleFilter } from './types';
 import { Paging, WebResponse } from 'src/models';
 import { createFileStorageConfig } from 'src/utils/file-storage-util';
 import { FileVisibility } from '@prisma/client';
+import { Public } from 'src/common/decorators';
 
 @Controller('article')
 export class ArticleController {
