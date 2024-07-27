@@ -9,7 +9,6 @@ export class JwtRefreshAuthGuard extends AuthGuard('jwt-refresh') {
   }
 
   canActivate(context: ExecutionContext): boolean {
-    // Custom logic can be added here if needed
     return super.canActivate(context) as boolean;
   }
 }

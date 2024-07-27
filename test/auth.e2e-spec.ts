@@ -150,7 +150,6 @@ describe('AuthController (e2e)', () => {
           password: dto.password,
         });
 
-      console.log(response.body);
       const { access_token } = response.body.data;
       const response2 = await request(app.getHttpServer())
         .delete('/auth/logout')

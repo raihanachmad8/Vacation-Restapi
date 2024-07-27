@@ -21,14 +21,19 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(req: Request, payload: JwtPayload) {
-    const token = req.headers.authorization.split(' ')[1];
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      throw new ForbiddenException('No token provided');
+    }
+
     const valid = await this.prismaService.personalAccessToken.findFirst({
       where: {
         access_token: token,
       },
     });
 
-    if (!valid || !token) {
+    if (!valid) {
       throw new ForbiddenException('Invalid token');
     }
 

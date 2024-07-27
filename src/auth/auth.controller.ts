@@ -15,6 +15,7 @@ import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { WebResponse } from './../models';
 import { JwtAuthGuard, JwtRefreshAuthGuard } from './guards';
+import { Public } from 'src/common/decorators';
 
 @Controller('auth')
 export class AuthController {
@@ -23,19 +24,29 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
   async register(@Body() dto: RegistrationDto): Promise<WebResponse<Tokens>> {
     const token = await this.authService.register(dto);
 
-    return new WebResponse<Tokens>('User successfully registered', 201, token);
+    return new WebResponse<Tokens>({
+      message: 'User successfully registered',
+      data: token,
+      statusCode: HttpStatus.CREATED,
+    });
   }
 
+  @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(@Body() dto: AuthDto): Promise<WebResponse<Tokens>> {
     const token = await this.authService.login(dto);
-    return new WebResponse<Tokens>('User successfully logged in', 200, token);
+    return new WebResponse<Tokens>({
+      message: 'User successfully logged in',
+      data: token,
+      statusCode: HttpStatus.OK,
+    });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -44,7 +55,10 @@ export class AuthController {
   async logout(@Req() req: Request): Promise<WebResponse> {
     await this.authService.logout(req['user']['user_id'], req['user']['token']);
 
-    return new WebResponse('User successfully logged out', 200);
+    return new WebResponse({
+      message: 'User successfully logged out',
+      statusCode: HttpStatus.OK,
+    });
   }
 
   @UseGuards(JwtRefreshAuthGuard)
@@ -56,6 +70,10 @@ export class AuthController {
       req['user']['token'],
     );
 
-    return new WebResponse<Tokens>('Token successfully refreshed', 200, token);
+    return new WebResponse<Tokens>({
+      message: 'Token successfully refreshed',
+      data: token,
+      statusCode: HttpStatus.OK,
+    });
   }
 }

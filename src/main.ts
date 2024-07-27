@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
@@ -13,7 +12,18 @@ async function bootstrap() {
   app.useLogger(logger);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new CustomValidationPipe());
-  app.use(cookieParser());
+  app.enableShutdownHooks();
+
+  process.stdin.resume();
+
+
+  function handle(signal) {
+    console.log(signal);
+    console.log('Bye bye');
+    process.exit();
+  }
+
+  process.on('SIGINT', handle);
 
   await app.listen(8000);
 }
