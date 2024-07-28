@@ -9,7 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { FileStorageOptions } from 'src/file-storage/types';
-import { deleteFile, uploadFile } from 'src/common/utils/file-storage-util';
+import { deleteFile, uploadFile } from 'src/common/utils/file-storage';
 
 @Injectable()
 export class UserService {

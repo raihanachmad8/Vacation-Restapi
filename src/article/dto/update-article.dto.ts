@@ -1,4 +1,4 @@
-import { IsArray, IsMimeType, IsNotEmpty, IsOptional, IsString, IsUUID, Length } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, Length } from 'class-validator';
 
 export class UpdateArticleDto {
     @IsOptional()
@@ -10,10 +10,6 @@ export class UpdateArticleDto {
     @IsString()
     @Length(10)
     content?: string;
-
-    @IsOptional()
-    @IsString()
-    cover?: string;
 
     @IsOptional()
     @IsArray()

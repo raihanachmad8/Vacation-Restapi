@@ -1,6 +1,6 @@
 import { diskStorage } from 'multer';
 import { promises as fsPromises } from 'fs';
-import { extname, join } from 'path';
+import { dirname, extname, join } from 'path';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { FileStorageOptions } from 'src/file-storage/types';
 import { InternalServerErrorException } from '@nestjs/common';
@@ -58,9 +58,7 @@ export async function deleteFile(
     await fsPromises.unlink(join(basePath, filename));
     return `File ${filename} deleted successfully`;
   } catch (error) {
-    throw new InternalServerErrorException(
-      `Error deleting file: ${error.message}`,
-    );
+    return `Error deleting file: ${error.message}`;
   }
 }
 
@@ -77,9 +75,7 @@ export async function deleteFiles(
     }
     return `Files deleted successfully`;
   } catch (error) {
-    throw new InternalServerErrorException(
-      `Error deleting files: ${error.message}`,
-    );
+    return `Error deleting files: ${error.message}`;
   }
 }
 
@@ -138,15 +134,15 @@ export async function uploadFile(
     visibility: FileVisibility.Public,
     storageFolder: '',
   },
-  isRandomFilename: boolean = true,
+  filename?: string,
 ): Promise<string> {
   const basePath = getBasePath(fileStorageOptions);
   try {
-    const filename = isRandomFilename
-      ? await generateRandomFileName(file)
-      : file?.originalname;
-    await fsPromises.writeFile(join(basePath, filename), file.buffer);
-    return filename;
+    const name = filename || (await generateRandomFileName(file));
+    const filePath = join(basePath, name);
+    await fsPromises.mkdir(dirname(filePath), { recursive: true });
+    await fsPromises.writeFile(filePath, file.buffer);
+    return name;
   } catch (error) {
     throw new InternalServerErrorException(
       `Error uploading file: ${error.message}`,

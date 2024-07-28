@@ -51,7 +51,7 @@ model Tag {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  Article Article[]
+  Article Article[] @relation("ArticleTag")
 
   @@map("tags")
 }
@@ -62,12 +62,14 @@ model Article {
   content    String   @db.Text
   cover_id   String?  @db.Char(36)
   user_id    String   @db.Char(36)
+  status     ArticleStatus @default(Pending)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   User  User? @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  Tag   Tag[]
+  Tag   Tag[] @relation("ArticleTag")
   Cover File? @relation(fields: [cover_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
 
   @@map("articles")
 }
@@ -88,4 +90,11 @@ model File {
   Article    Article[]
 
   @@map("files")
+}
+
+enum ArticleStatus {
+  Pending
+  Revision
+  Reject
+  Approve
 }

@@ -9,13 +9,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileVisibility, User } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { createFileStorageConfig } from 'src/common/utils/file-storage-util';
 import { WebResponse } from 'src/models';
 import { UpdateUserDto } from './dto';
+import { User } from '@prisma/client';
 
 @Controller('user')
 export class UserController {

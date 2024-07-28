@@ -5,11 +5,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   ParseFilePipeBuilder,
   Patch,
   Post,
   Query,
-  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -18,12 +18,10 @@ import { ArticleService } from './article.service';
 import { CreateArticleDto } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guards';
-import { Request } from 'express';
 import { articleFilter } from './types';
-import { Paging, WebResponse } from 'src/models';
-import { createFileStorageConfig } from 'src/common/utils/file-storage-util';
-import { FileVisibility } from '@prisma/client';
-import { Public } from 'src/common/decorators';
+import { ArticleModel, Paging, WebResponse } from 'src/models';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { User } from '@prisma/client';
 
 @Controller('article')
 export class ArticleController {
@@ -31,18 +29,9 @@ export class ArticleController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor(
-      'cover',
-      createFileStorageConfig({
-        visibility: FileVisibility.Public,
-        storageFolder: 'articles',
-      }),
-    ),
-  )
+  @UseInterceptors(FileInterceptor('cover'))
   async create(
-    @Req() req: Request,
+    @CurrentUser() user: User,
     @Body() dto: CreateArticleDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
@@ -55,11 +44,10 @@ export class ArticleController {
         })
         .build(),
     )
-    cover: Express.Multer.File,
+    file: Express.Multer.File,
   ) {
-    dto.user_id = req['user']['user_id'];
-    dto.cover = cover.filename;
-    const article = await this.articleService.create(dto);
+    dto.user_id = user.user_id;
+    const article = await this.articleService.create(dto, file);
     return new WebResponse<any>({
       message: 'Article created successfully',
       statusCode: HttpStatus.CREATED,
@@ -69,7 +57,6 @@ export class ArticleController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   async getArticles(
     @Query() query: articleFilter,
   ): Promise<WebResponse<Paging>> {
@@ -84,9 +71,8 @@ export class ArticleController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  async getArticle(@Req() req: Request): Promise<WebResponse<any>> {
-    const article = await this.articleService.find(req.params.id);
+  async getArticle(@Param('id') id: string): Promise<WebResponse<any>> {
+    const article = await this.articleService.find(id);
     return new WebResponse<any>({
       message: 'Article retrieved successfully',
       statusCode: HttpStatus.OK,
@@ -96,18 +82,10 @@ export class ArticleController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor(
-      'cover',
-      createFileStorageConfig({
-        visibility: FileVisibility.Public,
-        storageFolder: 'articles',
-      }),
-    ),
-  )
+  @UseInterceptors(FileInterceptor('cover'))
   async updateArticle(
-    @Req() req: Request,
+    @CurrentUser() user: User,
+    @Param('id') id: string,
     @Body() dto: CreateArticleDto,
     @UploadedFile(
       new ParseFilePipeBuilder()
@@ -121,11 +99,11 @@ export class ArticleController {
         .build(),
     )
     cover: Express.Multer.File,
-  ): Promise<WebResponse<any>> {
-    dto.user_id = req['user']['user_id'];
-    dto.cover = cover.filename;
-    await this.articleService.update(req.params.id, dto);
-    return new WebResponse<any>({
+  ): Promise<WebResponse<ArticleModel<User>>> {
+    dto.user_id = user.user_id;
+    const response = await this.articleService.update(id, dto, cover);
+    return new WebResponse<ArticleModel<User>>({
+      data: response,
       message: 'Article updated successfully',
       statusCode: HttpStatus.OK,
     });
@@ -134,8 +112,11 @@ export class ArticleController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  async deleteArticle(@Req() req: Request): Promise<WebResponse<any>> {
-    await this.articleService.delete(req.params.id, req['user']['user_id']);
+  async deleteArticle(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ): Promise<WebResponse<any>> {
+    await this.articleService.delete(id, user.user_id);
     return new WebResponse<any>({
       message: 'Article deleted successfully',
       statusCode: HttpStatus.OK,
