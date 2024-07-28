@@ -21,7 +21,7 @@ import { JwtAuthGuard } from 'src/auth/guards';
 import { Request } from 'express';
 import { articleFilter } from './types';
 import { Paging, WebResponse } from 'src/models';
-import { createFileStorageConfig } from 'src/utils/file-storage-util';
+import { createFileStorageConfig } from 'src/common/utils/file-storage-util';
 import { FileVisibility } from '@prisma/client';
 import { Public } from 'src/common/decorators';
 

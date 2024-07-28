@@ -8,6 +8,9 @@ import { FileStorageModule } from './file-storage/file-storage.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards';
 import { TagModule } from './tag/tag.module';
+import { UserService } from './user/user.service';
+import { UserController } from './user/user.controller';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -20,12 +23,15 @@ import { TagModule } from './tag/tag.module';
     ArticleModule,
     FileStorageModule,
     TagModule,
+    UserModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    UserService,
   ],
+  controllers: [UserController],
 })
 export class AppModule {}

@@ -131,3 +131,53 @@ export async function generateFileUrl(
 ): Promise<string> {
   return `${appUrl}/api/storage/${fileStorageOptions.visibility ? 'public' : 'private'}/${fileStorageOptions.storageFolder}/${filename}`;
 }
+
+export async function uploadFile(
+  file: Express.Multer.File,
+  fileStorageOptions: FileStorageOptions = {
+    visibility: FileVisibility.Public,
+    storageFolder: '',
+  },
+  isRandomFilename: boolean = true,
+): Promise<string> {
+  const basePath = getBasePath(fileStorageOptions);
+  try {
+    const filename = isRandomFilename
+      ? await generateRandomFileName(file)
+      : file?.originalname;
+    await fsPromises.writeFile(join(basePath, filename), file.buffer);
+    return filename;
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error uploading file: ${error.message}`,
+    );
+  }
+}
+
+export async function uploadFiles(
+  files: Express.Multer.File[],
+  fileStorageOptions: FileStorageOptions = {
+    visibility: FileVisibility.Public,
+    storageFolder: '',
+  },
+): Promise<string[]> {
+  const filenames: string[] = [];
+  try {
+    for (const file of files) {
+      const filename = await uploadFile(file, fileStorageOptions);
+      filenames.push(filename);
+    }
+    return filenames;
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error uploading files: ${error.message}`,
+    );
+  }
+}
+
+export async function generateRandomFileName(
+  file: Express.Multer.File,
+): Promise<string> {
+  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  return `${uniqueSuffix}${extname(file.originalname)}`;
+}

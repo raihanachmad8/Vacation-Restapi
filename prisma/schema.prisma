@@ -20,6 +20,7 @@ model User {
   username   String   @unique @db.VarChar(255)
   password   String   @db.VarChar(255)
   salt       String   @db.VarChar(50)
+  profile    String?  @db.Text
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

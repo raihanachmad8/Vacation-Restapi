@@ -9,7 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { articleFilter } from './types';
 import { ArticleModel, Paging } from 'src/models';
 import { ConfigService } from '@nestjs/config';
-import { deleteFile, generateFileUrl } from 'src/utils/file-storage-util';
+import { deleteFile, generateFileUrl } from 'src/common/utils/file-storage-util';
 import { FileStorageOptions } from 'src/file-storage/types';
 import { FileVisibility } from '@prisma/client';
 

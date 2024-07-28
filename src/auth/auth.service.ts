@@ -97,7 +97,7 @@ export class AuthService {
     return { access_token, refresh_token: refresh_token };
   }
 
-  private hashPassword(password: string, salt: string): string {
+  public hashPassword(password: string, salt: string): string {
     return bcrypt.hashSync(password, salt);
   }
 

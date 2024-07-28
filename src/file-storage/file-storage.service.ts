@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { getFile, getFiles } from './../utils/file-storage-util';
+import { getFile, getFiles } from '../common/utils/file-storage-util';
 import { FileStorageOptions } from 'src/file-storage/types';
 import { FileVisibility } from '@prisma/client';
 
