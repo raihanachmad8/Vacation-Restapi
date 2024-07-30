@@ -6,12 +6,12 @@ import { FileVisibility } from '@prisma/client';
 @Injectable()
 export class FileStorageService {
   public static PUBLIC = (storageFolder: string): FileStorageOptions => ({
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder,
   });
 
   public static PRIVATE = (storageFolder: string): FileStorageOptions => ({
-    visibility: FileVisibility.Private,
+    visibility: FileVisibility.PRIVATE,
     storageFolder,
   });
 

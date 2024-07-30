@@ -13,7 +13,7 @@ function getBasePath(fileStorageOptions: FileStorageOptions): string {
     '..',
     '..',
     'storage',
-    fileStorageOptions.visibility === FileVisibility.Public
+    fileStorageOptions.visibility === FileVisibility.PUBLIC
       ? 'public'
       : 'private',
     fileStorageOptions.storageFolder || '',
@@ -22,7 +22,7 @@ function getBasePath(fileStorageOptions: FileStorageOptions): string {
 
 export function createFileStorageConfig(
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): MulterOptions {
@@ -49,7 +49,7 @@ export function createFileStorageConfig(
 export async function deleteFile(
   filename: string,
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<string> {
@@ -65,7 +65,7 @@ export async function deleteFile(
 export async function deleteFiles(
   filenames: string[],
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<string> {
@@ -82,7 +82,7 @@ export async function deleteFiles(
 export async function getFile(
   filename: string,
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<Buffer> {
@@ -99,7 +99,7 @@ export async function getFile(
 export async function getFiles(
   filenames: string[],
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<Buffer[]> {
@@ -121,7 +121,7 @@ export async function generateFileUrl(
   filename: string,
   appUrl: string,
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<string> {
@@ -131,7 +131,7 @@ export async function generateFileUrl(
 export async function uploadFile(
   file: Express.Multer.File,
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
   filename?: string,
@@ -153,7 +153,7 @@ export async function uploadFile(
 export async function uploadFiles(
   files: Express.Multer.File[],
   fileStorageOptions: FileStorageOptions = {
-    visibility: FileVisibility.Public,
+    visibility: FileVisibility.PUBLIC,
     storageFolder: '',
   },
 ): Promise<string[]> {

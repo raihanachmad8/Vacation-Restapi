@@ -13,7 +13,7 @@ import { deleteFile, uploadFile } from 'src/common/utils/file-storage';
 
 @Injectable()
 export class UserService {
-  private readonly fileVisibility = FileVisibility.Public;
+  private readonly fileVisibility = FileVisibility.PUBLIC;
   private fileStorageOptions: FileStorageOptions = {
     visibility: this.fileVisibility,
     storageFolder: 'profiles',

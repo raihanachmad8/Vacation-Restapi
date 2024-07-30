@@ -5,12 +5,14 @@ import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload } from '../types';
 import { Request } from 'express';
 import { PrismaService } from './../../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
   ) {
     const secret = configService.get<string>('JWT_SECRET');
     super({
@@ -38,5 +40,23 @@ export class AtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     return { token, ...payload };
+  }
+
+  validateToken(token: string) {
+    const valid = this.prismaService.personalAccessToken.findFirst({
+      where: {
+        access_token: token,
+      },
+    });
+
+    if (!valid) {
+      throw new ForbiddenException('Invalid token');
+    }
+
+    const secret = this.configService.get<string>('JWT_SECRET');
+
+    return this.jwtService.verify(token, {
+      secret,
+    });
   }
 }

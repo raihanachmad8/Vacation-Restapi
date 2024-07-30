@@ -34,11 +34,8 @@ export class FileOwnershipGuard implements CanActivate {
     if (!file) {
       throw new NotFoundException('File not found');
     }
-    console.log(file.visibility === FileVisibility.Public);
-    console.log(file.user_id, user.user_id);
-    console.log(file.user_id !== user.user_id);
     if (
-      file.visibility === FileVisibility.Private &&
+      file.visibility === FileVisibility.PRIVATE &&
       file.user_id !== user.user_id
     ) {
       throw new ForbiddenException('Access denied to private file');

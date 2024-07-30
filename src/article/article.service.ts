@@ -16,16 +16,15 @@ import {
   uploadFile,
 } from 'src/common/utils/file-storage';
 import { FileStorageOptions } from 'src/file-storage/types';
-import { FileVisibility } from '@prisma/client';
-import { profileStorageConfig } from 'src/common/utils';
+import { ArticleStatus, Role } from '@prisma/client';
+import { articleStorageConfig, profileStorageConfig } from 'src/common/utils';
+import { commentDto } from './dto/comment.dto';
+import { Comment } from 'src/models/comment';
 
 @Injectable()
 export class ArticleService {
-  private readonly fileVisibility = FileVisibility.Public;
-  private fileStorageOptions: FileStorageOptions = {
-    visibility: this.fileVisibility,
-    storageFolder: 'articles',
-  };
+  private readonly articleStorageConfig: FileStorageOptions =
+    articleStorageConfig;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -53,7 +52,7 @@ export class ArticleService {
           const coverFile = await prisma.file.create({
             data: {
               filename: coverFileName,
-              visibility: this.fileVisibility,
+              visibility: this.articleStorageConfig.visibility,
               user_id,
             },
           });
@@ -67,7 +66,13 @@ export class ArticleService {
                 connect: tagNames.map((tagName) => ({ tag_name: tagName })),
               },
             },
-            include: { User: true, Tag: true, Cover: true },
+            include: {
+              User: true,
+              Tag: true,
+              Cover: true,
+              ArticleComment: true,
+              ArticleLike: true,
+            },
           });
 
           return article;
@@ -75,14 +80,14 @@ export class ArticleService {
       );
 
       if (file) {
-        await uploadFile(file, this.fileStorageOptions, coverFileName);
+        await uploadFile(file, this.articleStorageConfig, coverFileName);
       }
       return this.transformArticle(transaction);
     } catch (error) {
       try {
         const deleteMessage = await deleteFile(
           coverFileName,
-          this.fileStorageOptions,
+          this.articleStorageConfig,
         );
         console.error(deleteMessage);
       } catch (error) {
@@ -98,44 +103,53 @@ export class ArticleService {
     paging: Paging;
     data: ArticleModel<User> | ArticleModel<User>[];
   }> {
-    const { search, limit, page, orderBy, order } = query;
-    const take = limit && limit > 25 ? 25 : limit || 10;
-    const skip = page ? (page - 1) * take : 0;
+    const { u, stat, s, limit, page, orderBy, order } = query;
+    const take = limit ? Math.min(parseInt(limit, 10), 25) : 10;
+    const skip = page ? (parseInt(page, 10) - 1) * take : 0;
     const orderConfig = orderBy ? { [orderBy]: order || 'asc' } : undefined;
 
-    const whereConditions = search
-      ? {
-          OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { content: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const statusValues: ArticleStatus[] = stat
+      ? stat
+          .split(',')
+          .map((status) => status.trim().toUpperCase())
+          .filter((status): status is keyof typeof ArticleStatus =>
+            Object.values(ArticleStatus).includes(status as ArticleStatus),
+          )
+          .map((status) => ArticleStatus[status as keyof typeof ArticleStatus])
+      : ['APPROVE'];
+
+    const whereConditions = {
+      ...(s && {
+        OR: [{ title: { contains: s } }, { content: { contains: s } }],
+      }),
+      ...(u && { user_id: u }),
+      ...(stat && {
+        status: {
+          in: statusValues,
+        },
+      }),
+    };
 
     const total = await this.prismaService.article.count({
       where: whereConditions,
     });
+
+    const include = {
+      User: true,
+      Tag: true,
+      Cover: true,
+    };
 
     const articles = await this.prismaService.article.findMany({
       where: whereConditions,
       take,
       skip,
       orderBy: orderConfig,
-      include: {
-        User: {
-          select: { user_id: true, username: true, email: true },
-        },
-        Tag: {
-          select: { tag_name: true },
-        },
-        Cover: {
-          select: { filename: true },
-        },
-      },
+      include: include,
     });
 
     const paging: Paging = {
-      current_page: page || 1,
+      current_page: page ? parseInt(page, 10) : 1,
       first_page: 1,
       last_page: Math.ceil(total / take),
       total,
@@ -147,15 +161,46 @@ export class ArticleService {
     };
   }
 
-  async find(id: string): Promise<ArticleModel<User> | ArticleModel<User>[]> {
+  async find(
+    id: string,
+    user_id?: string,
+  ): Promise<ArticleModel<User> | ArticleModel<User>[]> {
+    const include = {
+      User: true,
+      Tag: true,
+      Cover: true,
+      ArticleComment: {
+        include: {
+          User: true,
+        },
+      },
+    };
+
+    if (user_id) {
+      include['ArticleLike'] = {
+        where: {
+          user_id,
+        },
+      };
+      include['ArticleBookmark'] = {
+        where: {
+          user_id,
+        },
+      };
+    }
     const article = await this.prismaService.article.findUnique({
       where: { article_id: id },
-      include: { User: true, Tag: true, Cover: true },
+      include: include,
     });
 
     if (!article) {
       throw new NotFoundException('Article not found');
     }
+
+    await this.prismaService.article.update({
+      where: { article_id: id },
+      data: { count_view: article.count_view + 1 },
+    });
 
     return this.transformArticle(article);
   }
@@ -177,6 +222,10 @@ export class ArticleService {
       );
     }
 
+    const coverFileName = file
+      ? await generateRandomFileName(file)
+      : article.Cover.filename;
+
     try {
       const transaction = await this.prismaService.$transaction(
         async (prisma) => {
@@ -196,24 +245,35 @@ export class ArticleService {
           );
           await Promise.all(tagUpserts);
 
-          const coverFileName = file
-            ? await generateRandomFileName(file)
-            : article.Cover.filename;
-
           const newCover = file
             ? await prisma.file.create({
                 data: {
                   filename: coverFileName,
-                  visibility: this.fileVisibility,
+                  visibility: this.articleStorageConfig.visibility,
                   user_id,
                 },
               })
             : null;
 
+          let articleStatus = article.status;
+
+          switch (articleStatus) {
+            case ArticleStatus.REJECT:
+              articleStatus = ArticleStatus.PENDING;
+              break;
+            case 'REVISION':
+              articleStatus = ArticleStatus.PENDING;
+              break;
+            default:
+              articleStatus = article.status;
+              break;
+          }
+
           const updatedArticle = await prisma.article.update({
             where: { article_id: id },
             data: {
               ...articleData,
+              status: articleStatus,
               User: { connect: { user_id } },
               Tag: {
                 connect: tagsToConnect.map((tag) => ({ tag_name: tag })),
@@ -223,7 +283,17 @@ export class ArticleService {
                 ? { connect: { id: newCover.id } }
                 : { connect: { id: article.Cover.id } },
             },
-            include: { User: true, Tag: true, Cover: true },
+            include: {
+              User: true,
+              Tag: true,
+              Cover: true,
+              ArticleComment: {
+                include: {
+                  User: true,
+                },
+              },
+              ArticleLike: true,
+            },
           });
 
           return updatedArticle;
@@ -231,8 +301,8 @@ export class ArticleService {
       );
 
       if (file) {
-        await uploadFile(file, this.fileStorageOptions);
-        await deleteFile(article.Cover.filename, this.fileStorageOptions);
+        await uploadFile(file, this.articleStorageConfig, coverFileName);
+        await deleteFile(article.Cover.filename, this.articleStorageConfig);
       }
 
       return this.transformArticle(transaction);
@@ -268,7 +338,7 @@ export class ArticleService {
         });
 
         if (filename) {
-          await deleteFile(filename, this.fileStorageOptions);
+          await deleteFile(filename, this.articleStorageConfig);
         }
       });
 
@@ -281,70 +351,293 @@ export class ArticleService {
     }
   }
 
+  async changeStatus(id: string, status: ArticleStatus, user_id: string) {
+    const article = await this.prismaService.article.findUnique({
+      where: { article_id: id },
+      include: { User: true, Tag: true, Cover: true },
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: { user_id },
+    });
+
+    if (user.role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'You are not authorized to update this article',
+      );
+    }
+
+    try {
+      const transaction = await this.prismaService.$transaction(
+        async (prisma) => {
+          const updatedArticle = await prisma.article.update({
+            where: { article_id: id },
+            data: { status },
+            include: { User: true, Tag: true, Cover: true },
+          });
+
+          return updatedArticle;
+        },
+      );
+
+      return this.transformArticle(transaction);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error updating article: ${error.message}`,
+      );
+    }
+  }
+
+  async like(article_id: string, user_id: string) {
+    const article = await this.prismaService.article.findUnique({
+      where: { article_id },
+      include: { ArticleLike: true },
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    const userLike = article.ArticleLike.find(
+      (like) => like.user_id === user_id,
+    );
+
+    try {
+      if (userLike) {
+        await this.prismaService.articleLike.delete({
+          where: {
+            article_id_user_id: {
+              article_id,
+              user_id,
+            },
+          },
+        });
+
+        return {
+          marked_like: false,
+        };
+      } else {
+        await this.prismaService.articleLike.create({
+          data: {
+            article_id,
+            user_id,
+          },
+        });
+
+        return {
+          marked_like: true,
+        };
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error liking article: ${error.message}`,
+      );
+    }
+  }
+
+  async bookmark(article_id: string, user_id: string) {
+    const article = await this.prismaService.article.findUnique({
+      where: { article_id },
+      include: { User: true },
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: { user_id },
+      include: { ArticleBookmark: true },
+    });
+
+    const isArticleBookmarked = user.ArticleBookmark.some(
+      (bookmark) => bookmark.article_id === article_id,
+    );
+
+    try {
+      if (isArticleBookmarked) {
+        await this.prismaService.articleBookmark.delete({
+          where: {
+            article_id_user_id: {
+              article_id,
+              user_id,
+            },
+          },
+        });
+
+        return {
+          marked_bookmark: false,
+        };
+      } else {
+        await this.prismaService.articleBookmark.create({
+          data: {
+            article_id,
+            user_id,
+          },
+        });
+
+        return {
+          marked_bookmark: true,
+        };
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error bookmarking article: ${error.message}`,
+      );
+    }
+  }
+
+  async getBookmark(user_id: string) {
+    const article = await this.prismaService.article.findMany({
+      where: {
+        ArticleBookmark: {
+          some: {
+            user_id,
+          },
+        },
+      },
+      include: {
+        User: true,
+        Tag: true,
+        Cover: true,
+        ArticleComment: {
+          include: {
+            User: true,
+          },
+        },
+        ArticleLike: true,
+        ArticleBookmark: true,
+      },
+    });
+
+    if (!article) {
+      return [];
+    }
+
+    return this.transformArticle(article);
+  }
+
+  async comment(article_id: string, user_id: string, comment: commentDto) {
+    const article = await this.prismaService.article.findUnique({
+      where: { article_id },
+      include: { ArticleComment: true },
+    });
+
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+
+    try {
+      const newComment = await this.prismaService.articleComment.create({
+        data: {
+          article_id,
+          user_id,
+          comment: comment.comment,
+        },
+
+        include: {
+          User: true,
+        },
+      });
+
+      return this.transformComment(newComment);
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error commenting article: ${error.message}`,
+      );
+    }
+  }
+
+  private async transformComment(comment: any): Promise<Comment> {
+    const appUrl = this.configService.get('APP_URL');
+
+    return {
+      comment_id: comment.comment_id ?? '',
+      comment: comment.comment ?? '',
+      status: comment.status ?? '',
+      user: {
+        user_id: comment.User?.user_id ?? '',
+        username: comment.User?.username ?? '',
+        email: comment.User?.email ?? '',
+        fullname: comment.User?.fullname ?? '',
+        profile:
+          (comment.User?.profile &&
+            (await generateFileUrl(
+              comment.User.profile,
+              appUrl,
+              profileStorageConfig,
+            ))) ||
+          '',
+      },
+      created_at: comment.created_at ?? '',
+      updated_at: comment.updated_at ?? '',
+    };
+  }
+
   private async transformArticle(
     articles: any | any[],
   ): Promise<ArticleModel<User> | ArticleModel<User>[]> {
     const appUrl = this.configService.get('APP_URL');
-    if (Array.isArray(articles)) {
-      return Promise.all(
-        articles.map(async (a) => ({
-          article_id: a.article_id,
-          title: a.title,
-          content: a.content,
-          User: {
-            user_id: a.User.user_id,
-            username: a.User.username,
-            email: a.User.email,
-            fullname: a.User.fullname,
-            profile: a.User.profile
-              ? await generateFileUrl(
-                  a.User.profile,
-                  appUrl,
-                  profileStorageConfig,
-                )
-              : '',
-          },
-          Tag: a.Tag.map((tag) => tag.tag_name),
-          cover:
-            (await generateFileUrl(
-              a.Cover?.filename,
-              appUrl,
-              this.fileStorageOptions,
-            )) || null,
-          created_at: a.created_at,
-          updated_at: a.updated_at,
-        })),
-      );
-    } else {
+
+    const generateArticleModel = async (
+      a: any,
+    ): Promise<ArticleModel<User>> => {
       return {
-        article_id: articles.article_id,
-        title: articles.title,
-        content: articles.content,
-        User: {
-          fullname: articles.User.fullname,
-          user_id: articles.User.user_id,
-          username: articles.User.username,
-          email: articles.User.email,
+        article_id: a.article_id ?? '',
+        title: a.title ?? '',
+        content: a.content ?? '',
+        cover:
+          (a.Cover?.filename &&
+            (await generateFileUrl(
+              a.Cover.filename,
+              appUrl,
+              this.articleStorageConfig,
+            ))) ||
+          null,
+        status: a.status ?? '',
+        count_likes: a?.ArticleLike ? a.ArticleLike.length : 0,
+        count_views: a.count_view ?? 0,
+        marked_bookmark:
+          a?.ArticleBookmark &&
+          a.ArticleBookmark.some(
+            (bookmark: any) => bookmark.user_id === a.user_id,
+          ),
+        marked_like:
+          a?.ArticleLike &&
+          a.ArticleLike.some((like: any) => like.user_id === a.user_id),
+        user: {
+          user_id: a.User?.user_id ?? '',
+          username: a.User?.username ?? '',
+          email: a.User?.email ?? '',
+          fullname: a.User?.fullname ?? '',
           profile:
-            (articles.User.profile &&
+            (a.User?.profile &&
               (await generateFileUrl(
-                articles.User.profile,
+                a.User.profile,
                 appUrl,
                 profileStorageConfig,
               ))) ||
             '',
         },
-        Tag: articles.Tag.map((tag) => tag.tag_name),
-        cover: articles.Cover
-          ? await generateFileUrl(
-              articles.Cover.filename,
-              appUrl,
-              this.fileStorageOptions,
-            )
-          : '',
-        created_at: articles.created_at,
-        updated_at: articles.updated_at,
+        tag: (a?.Tag || []).map((tag: any) => tag.tag_name ?? ''),
+        comment:
+          a.ArticleComment &&
+          (await Promise.all(
+            a.ArticleComment.map((c: any) => this.transformComment(c)),
+          )),
+        created_at: a.created_at ?? '',
+        updated_at: a.updated_at ?? '',
       };
+    };
+
+    if (Array.isArray(articles)) {
+      return Promise.all(articles.map(generateArticleModel));
+    } else {
+      return generateArticleModel(articles);
     }
   }
 }
