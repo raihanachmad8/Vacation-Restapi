@@ -20,6 +20,7 @@ import { ArticleStatus, Role } from '@prisma/client';
 import { articleStorageConfig, profileStorageConfig } from 'src/common/utils';
 import { commentDto } from './dto/comment.dto';
 import { Comment } from 'src/models/comment';
+import { Reply } from 'src/models/replies';
 
 @Injectable()
 export class ArticleService {
@@ -172,6 +173,17 @@ export class ArticleService {
       ArticleComment: {
         include: {
           User: true,
+          ArticleCommentLike: true,
+          ArticleCommentReply: {
+            include: {
+              User: true,
+              ChildReplies: {
+                include: {
+                  User: true,
+                },
+              },
+            },
+          },
         },
       },
     };
@@ -536,7 +548,7 @@ export class ArticleService {
         data: {
           article_id,
           user_id,
-          comment: comment.comment,
+          ...comment,
         },
 
         include: {
@@ -552,30 +564,148 @@ export class ArticleService {
     }
   }
 
-  private async transformComment(comment: any): Promise<Comment> {
-    const appUrl = this.configService.get('APP_URL');
+  async likeComment(article_id: string, comment_id: string, user_id: string) {
+    try {
+      const comment = await this.prismaService.articleComment.findUnique({
+        where: { comment_id },
+      });
 
-    return {
-      comment_id: comment.comment_id ?? '',
-      comment: comment.comment ?? '',
-      status: comment.status ?? '',
-      user: {
-        user_id: comment.User?.user_id ?? '',
-        username: comment.User?.username ?? '',
-        email: comment.User?.email ?? '',
-        fullname: comment.User?.fullname ?? '',
-        profile:
-          (comment.User?.profile &&
-            (await generateFileUrl(
-              comment.User.profile,
-              appUrl,
-              profileStorageConfig,
-            ))) ||
-          '',
+      if (!comment) {
+        throw new NotFoundException('Comment not found');
+      }
+
+      const existingLike =
+        await this.prismaService.articleCommentLike.findUnique({
+          where: { comment_id_user_id: { comment_id, user_id } },
+        });
+
+      if (existingLike) {
+        await this.prismaService.articleCommentLike.delete({
+          where: { comment_id_user_id: { comment_id, user_id } },
+        });
+        return {
+          marked_like: false,
+        };
+      } else {
+        // Create a new like
+        await this.prismaService.articleCommentLike.create({
+          data: { comment_id, user_id },
+        });
+        return {
+          marked_like: true,
+        };
+      }
+    } catch (error) {
+      console.error('Error in likeComment:', error);
+      throw new InternalServerErrorException(
+        'Failed to like/unlike the comment',
+      );
+    }
+  }
+
+  async replyComment(
+    article_id: string,
+    comment_id: string,
+    user_id: string,
+    commentDto: commentDto,
+  ) {
+    const parentComment = await this.prismaService.articleComment.findUnique({
+      where: { comment_id },
+    });
+
+    if (!parentComment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    const reply = await this.prismaService.articleCommentReply.create({
+      data: {
+        ...commentDto,
+        user_id,
+        comment_id,
       },
-      created_at: comment.created_at ?? '',
-      updated_at: comment.updated_at ?? '',
-    };
+      include: {
+        User: true,
+        ChildReplies: {
+          include: {
+            User: true,
+          },
+        },
+      },
+    });
+
+    return this.transformReply(reply);
+  }
+
+  async replyReply(
+    article_id: string,
+    comment_id: string,
+    reply_id: string,
+    user_id: string,
+    commentDto: commentDto,
+  ) {
+    const parentReply = await this.prismaService.articleCommentReply.findUnique(
+      {
+        where: { reply_id },
+      },
+    );
+
+    if (!parentReply) {
+      throw new NotFoundException('Reply not found');
+    }
+
+    const reply = await this.prismaService.articleCommentReply.create({
+      data: {
+        ...commentDto,
+        user_id,
+        comment_id,
+        parent_id: reply_id,
+      },
+    });
+
+    return reply;
+  }
+
+  async likeReply(
+    article_id: string,
+    comment_id: string,
+    reply_id: string,
+    user_id: string,
+  ) {
+    try {
+      const reply = await this.prismaService.articleCommentReply.findUnique({
+        where: { reply_id },
+      });
+
+      if (!reply) {
+        throw new NotFoundException('Reply not found');
+      }
+
+      const existingLike =
+        await this.prismaService.articleCommentReplyLike.findUnique({
+          where: { reply_id_user_id: { reply_id, user_id } },
+        });
+
+      if (existingLike) {
+        await this.prismaService.articleCommentReplyLike.delete({
+          where: { reply_id_user_id: { reply_id, user_id } },
+        });
+
+        return {
+          marked_like: false,
+        };
+      }
+
+      await this.prismaService.articleCommentReplyLike.create({
+        data: { reply_id, user_id },
+      });
+
+      return {
+        marked_like: true,
+      };
+    } catch (error) {
+      console.error('Error in likeReply:', error);
+      throw new InternalServerErrorException('Failed to like/unlike the reply');
+    }
   }
 
   private async transformArticle(
@@ -639,5 +769,75 @@ export class ArticleService {
     } else {
       return generateArticleModel(articles);
     }
+  }
+
+  private async transformComment(comment: any): Promise<Comment> {
+    const appUrl = this.configService.get('APP_URL');
+
+    const childReplies = comment.ArticleCommentReply?.ChildReplies
+      ? await Promise.all(
+          comment.ArticleCommentReply.ChildReplies.map((r: any) =>
+            this.transformReply(r),
+          ),
+        )
+      : [];
+
+    const replies = comment.ArticleCommentReply
+      ? await Promise.all(
+          comment.ArticleCommentReply.map((r: any) => this.transformReply(r)),
+        )
+      : [];
+
+    return {
+      comment_id: comment.comment_id ?? '',
+      comment: comment.comment ?? '',
+      count_like: (comment?.CommentLike && comment.CommentLike.length) || 0,
+      user: {
+        user_id: comment.User?.user_id ?? '',
+        username: comment.User?.username ?? '',
+        email: comment.User?.email ?? '',
+        fullname: comment.User?.fullname ?? '',
+        profile:
+          (comment.User?.profile &&
+            (await generateFileUrl(
+              comment.User.profile,
+              appUrl,
+              profileStorageConfig,
+            ))) ||
+          '',
+      },
+      replies: [...replies, ...childReplies],
+      created_at: comment.created_at ?? '',
+      updated_at: comment.updated_at ?? '',
+    };
+  }
+
+  private async transformReply(reply: any): Promise<Reply> {
+    const appUrl = this.configService.get('APP_URL');
+    return {
+      reply_id: reply.reply_id ?? '',
+      parent_id: reply.parent_id ?? '',
+      comment: reply.comment ?? '',
+      count_like:
+        (reply?.ArticleCommentReplyLike &&
+          reply.ArticleCommentReplyLike.length) ||
+        0,
+      user: {
+        user_id: reply.User?.user_id ?? '',
+        username: reply.User?.username ?? '',
+        email: reply.User?.email ?? '',
+        fullname: reply.User?.fullname ?? '',
+        profile:
+          (reply.User?.profile &&
+            (await generateFileUrl(
+              reply.User.profile,
+              appUrl,
+              profileStorageConfig,
+            ))) ||
+          '',
+      },
+      created_at: reply.created_at ?? '',
+      updated_at: reply.updated_at ?? '',
+    };
   }
 }

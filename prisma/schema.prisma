@@ -30,6 +30,9 @@ model User {
   ArticleBookmark     ArticleBookmark[]
   ArticleLike         ArticleLike[]
   ArticleComment      ArticleComment[]
+  ArticleCommentLike  ArticleCommentLike[]
+  ArticleCommentReply ArticleCommentReply[]
+  ArticleCommentReplyLike ArticleCommentReplyLike[]
 
   @@map("users")
 }
@@ -139,6 +142,52 @@ model ArticleComment {
 
   User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   Article Article @relation(fields: [article_id], references: [article_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleCommentReply ArticleCommentReply[]
+  ArticleCommentLike ArticleCommentLike[]
 
   @@map("article_comments")
 }
+
+model ArticleCommentLike {
+  comment_id String   @db.Char(36)
+  user_id    String   @db.Char(36)
+  created_at DateTime @default(now())
+
+  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleComment ArticleComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([comment_id, user_id])
+  @@map("article_comment_likes")
+}
+
+model ArticleCommentReply {
+  reply_id   String   @id @default(uuid()) @db.Char(36)
+  comment_id String   @db.Char(36)
+  parent_id  String?  @db.Char(36)
+  user_id    String   @db.Char(36)
+  comment      String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleComment ArticleComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleCommentReplyLike ArticleCommentReplyLike[]
+  
+  ParentReply         ArticleCommentReply?  @relation("ReplyReplies", fields: [parent_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
+  ChildReplies        ArticleCommentReply[] @relation("ReplyReplies")
+
+  @@map("article_comment_replies")
+}
+
+model ArticleCommentReplyLike {
+  reply_id String   @db.Char(36)
+  user_id  String   @db.Char(36)
+  created_at DateTime @default(now())
+
+  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleCommentReply ArticleCommentReply @relation(fields: [reply_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([reply_id, user_id])
+  @@map("article_comment_reply_likes")
+}
+

@@ -280,4 +280,96 @@ export class ArticleController {
       data: response,
     });
   }
+
+  @Post(':id/comment/:comment_id/like')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  async likeComment(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+  ): Promise<WebResponse<any>> {
+    const like = await this.articleService.likeComment(
+      id,
+      comment_id,
+      user.user_id,
+    );
+    return new WebResponse<any>({
+      message: 'Comment liked successfully',
+      statusCode: HttpStatus.OK,
+      data: like,
+    });
+  }
+
+  @Post(':id/comment/:comment_id/reply')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  async replyComment(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+    @Body() comment: commentDto,
+  ): Promise<WebResponse<Comment>> {
+    const response = await this.articleService.replyComment(
+      id,
+      comment_id,
+      user.user_id,
+      comment,
+    );
+    return new WebResponse<any>({
+      message: 'Comment replied successfully',
+      statusCode: HttpStatus.CREATED,
+      data: response,
+    });
+  }
+
+  @Post(':id/comment/:comment_id/reply/:reply_id')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  async replyReply(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+    @Param('reply_id') reply_id: string,
+    @Body() comment: commentDto,
+  ): Promise<WebResponse<Comment>> {
+    const response = await this.articleService.replyReply(
+      id,
+      comment_id,
+      reply_id,
+      user.user_id,
+      comment,
+    );
+    return new WebResponse<any>({
+      message: 'Reply replied successfully',
+      statusCode: HttpStatus.CREATED,
+      data: response,
+    });
+  }
+
+  @Post(':id/comment/:comment_id/reply/:reply_id/like')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  async likeReply(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+    @Param('reply_id') reply_id: string,
+  ): Promise<WebResponse<any>> {
+    const like = await this.articleService.likeReply(
+      id,
+      comment_id,
+      reply_id,
+      user.user_id,
+    );
+    return new WebResponse<any>({
+      message: 'Reply liked successfully',
+      statusCode: HttpStatus.OK,
+      data: like,
+    });
+  }
 }
