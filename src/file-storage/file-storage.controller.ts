@@ -31,4 +31,28 @@ export class FileStorageController {
       });
     }
   }
+
+  @Public()
+  @Get('public/profiles/:filename')
+  async getPublicProfileFile(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.fileStorageService.getFile(
+        filename,
+        FileStorageService.PUBLIC('profiles'),
+      );
+      const mimeType = mime.lookup(filename);
+      res.setHeader('Content-Type', mimeType);
+      res.send(buffer);
+    } catch (error) {
+      res.status(404).send({
+        statusCode: 404,
+        timestamp: new Date().toISOString(),
+        message: 'File not found',
+        error: 'Not Found',
+      });
+    }
+  }
 }

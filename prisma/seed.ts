@@ -1,8 +1,27 @@
 import { PrismaClient } from '@prisma/client';
+import { UserSeeder } from './seeder/user.seed';
+import { ArticleSeeder } from './seeder/article.seed';
+import { ArticleCommentSeeder } from './seeder/article-comment';
+import { ArticleLikeSeeder } from './seeder/article-like.seed';
+import { ArticleCommentLikeSeeder } from './seeder/article-comment-like';
+import { ArticleCommentReplySeeder } from './seeder/article-comment-reply';
+import { ArticleCommentReplyReplySeeder } from './seeder/article-comment-reply-reply';
+import { ArticleCommentReplyLikeSeeder } from './seeder/article-comment-reply-like';
+import { ArticleBookmarkSeeder } from './seeder/article-bookmark';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding completed successfully.');
+  Promise.race([
+    await UserSeeder.seed(prisma),
+    await ArticleSeeder.seed(prisma),
+    await ArticleBookmarkSeeder.seed(prisma),
+    await ArticleCommentSeeder.seed(prisma),
+    await ArticleLikeSeeder.seed(prisma),
+    await ArticleCommentLikeSeeder.seed(prisma),
+    await ArticleCommentReplySeeder.seed(prisma),
+    await ArticleCommentReplyReplySeeder.seed(prisma),
+    ArticleCommentReplyLikeSeeder.seed(prisma),
+  ]);
 }
 
 main()

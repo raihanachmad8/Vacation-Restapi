@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { FileVisibility, User } from '@prisma/client';
+import { FileVisibility } from '@prisma/client';
 import { User as UserModel } from 'src/models';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateUserDto } from './dto';
@@ -30,14 +30,14 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return await UserModel.toJson(user);
   }
 
   async update(
     user_id: string,
     data: UpdateUserDto,
     file?: Express.Multer.File,
-  ): Promise<User> {
+  ): Promise<UserModel> {
     const user = await this.prismaService.user.findUnique({
       where: {
         user_id,
@@ -70,7 +70,7 @@ export class UserService {
           });
         },
       );
-      return transaction;
+      return await UserModel.toJson(transaction);
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating user: ${error.message}`,

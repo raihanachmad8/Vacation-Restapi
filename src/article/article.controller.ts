@@ -112,10 +112,10 @@ export class ArticleController {
         .build(),
     )
     cover: Express.Multer.File,
-  ): Promise<WebResponse<ArticleModel<User>>> {
+  ): Promise<WebResponse<ArticleModel>> {
     dto.user_id = user.user_id;
     const response = await this.articleService.update(id, dto, cover);
-    return new WebResponse<ArticleModel<User>>({
+    return new WebResponse<ArticleModel>({
       data: response,
       message: 'Article updated successfully',
       statusCode: HttpStatus.OK,
@@ -251,9 +251,9 @@ export class ArticleController {
   @Roles(Role.MEMBER)
   async getBookmark(
     @CurrentUser() user: User,
-  ): Promise<WebResponse<ArticleModel<User>[] | []>> {
+  ): Promise<WebResponse<ArticleModel[] | []>> {
     const articles = await this.articleService.getBookmark(user.user_id);
-    return new WebResponse<ArticleModel<User>[] | []>({
+    return new WebResponse<ArticleModel[] | []>({
       message: 'Bookmark retrieved successfully',
       statusCode: HttpStatus.OK,
       data: articles,

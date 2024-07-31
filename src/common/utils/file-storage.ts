@@ -5,8 +5,26 @@ import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer
 import { FileStorageOptions } from 'src/file-storage/types';
 import { InternalServerErrorException } from '@nestjs/common';
 import { FileVisibility } from '@prisma/client';
+import axios from 'axios';
+import mime from 'mime-types';
+
+const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
 function getBasePath(fileStorageOptions: FileStorageOptions): string {
+  if (__dirname.includes('dist')) {
+    return join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      'storage',
+      fileStorageOptions.visibility === FileVisibility.PUBLIC
+        ? 'public'
+        : 'private',
+      fileStorageOptions.storageFolder || '',
+    );
+  }
   return join(
     __dirname,
     '..',
@@ -79,6 +97,21 @@ export async function deleteFiles(
   }
 }
 
+export async function deleteAllFiles(
+  fileStorageOptions: FileStorageOptions = {
+    visibility: FileVisibility.PUBLIC,
+    storageFolder: '',
+  },
+): Promise<string> {
+  const basePath = getBasePath(fileStorageOptions);
+  try {
+    await fsPromises.rm(basePath, { recursive: true });
+    return `All files deleted successfully`;
+  } catch (error) {
+    return `Error deleting all files: ${error.message}`;
+  }
+}
+
 export async function getFile(
   filename: string,
   fileStorageOptions: FileStorageOptions = {
@@ -119,7 +152,6 @@ export async function getFiles(
 
 export async function generateFileUrl(
   filename: string,
-  appUrl: string,
   fileStorageOptions: FileStorageOptions = {
     visibility: FileVisibility.PUBLIC,
     storageFolder: '',
@@ -129,7 +161,7 @@ export async function generateFileUrl(
 }
 
 export async function uploadFile(
-  file: Express.Multer.File,
+  file: Express.Multer.File | File,
   fileStorageOptions: FileStorageOptions = {
     visibility: FileVisibility.PUBLIC,
     storageFolder: '',
@@ -172,8 +204,43 @@ export async function uploadFiles(
 }
 
 export async function generateRandomFileName(
-  file: Express.Multer.File,
+  file: Express.Multer.File | File,
 ): Promise<string> {
   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-  return `${uniqueSuffix}${extname(file.originalname)}`;
+  return `${uniqueSuffix}.${mime.extension(file.mimetype)}`;
+}
+
+interface File {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+}
+
+export async function downloadAndSaveImage(
+  imageUrl: string,
+  fileStorageOptions: FileStorageOptions = {
+    visibility: FileVisibility.PUBLIC,
+    storageFolder: '',
+  },
+  filename?: string,
+): Promise<string> {
+  try {
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const file: File = {
+      fieldname: 'file',
+      originalname: filename || imageUrl.split('/').pop() || 'unknown',
+      encoding: 'binary',
+      mimetype: response.headers['content-type'] || 'image/jpeg', // Default to 'image/jpeg' if mime type not found
+      buffer: Buffer.from(response.data, 'binary'),
+      size: response.data.length,
+    };
+    return await uploadFile(file, fileStorageOptions);
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error downloading and saving image: ${error.message}`,
+    );
+  }
 }

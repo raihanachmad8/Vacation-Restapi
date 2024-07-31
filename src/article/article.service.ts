@@ -7,17 +7,15 @@ import {
 import { CreateArticleDto, UpdateArticleDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { articleFilter } from './types';
-import { ArticleModel, Paging, User } from 'src/models';
-import { ConfigService } from '@nestjs/config';
+import { ArticleModel, Paging } from 'src/models';
 import {
   deleteFile,
-  generateFileUrl,
   generateRandomFileName,
   uploadFile,
 } from 'src/common/utils/file-storage';
 import { FileStorageOptions } from 'src/file-storage/types';
 import { ArticleStatus, Role } from '@prisma/client';
-import { articleStorageConfig, profileStorageConfig } from 'src/common/utils';
+import { articleStorageConfig } from 'src/common/utils';
 import { commentDto } from './dto/comment.dto';
 import { Comment } from 'src/models/comment';
 import { Reply } from 'src/models/replies';
@@ -27,10 +25,7 @@ export class ArticleService {
   private readonly articleStorageConfig: FileStorageOptions =
     articleStorageConfig;
 
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async create(dto: CreateArticleDto, file: Express.Multer.File) {
     const { tags, user_id, ...articleData } = dto;
@@ -83,7 +78,7 @@ export class ArticleService {
       if (file) {
         await uploadFile(file, this.articleStorageConfig, coverFileName);
       }
-      return this.transformArticle(transaction);
+      return await ArticleModel.toJson(transaction);
     } catch (error) {
       try {
         const deleteMessage = await deleteFile(
@@ -102,7 +97,7 @@ export class ArticleService {
 
   async search(query: articleFilter): Promise<{
     paging: Paging;
-    data: ArticleModel<User> | ArticleModel<User>[];
+    data: ArticleModel | ArticleModel[];
   }> {
     const { u, stat, s, limit, page, orderBy, order } = query;
     const take = limit ? Math.min(parseInt(limit, 10), 25) : 10;
@@ -158,14 +153,14 @@ export class ArticleService {
 
     return {
       paging,
-      data: await this.transformArticle(articles),
+      data: await Promise.all(articles.map(ArticleModel.toJson)),
     };
   }
 
   async find(
     id: string,
     user_id?: string,
-  ): Promise<ArticleModel<User> | ArticleModel<User>[]> {
+  ): Promise<ArticleModel | ArticleModel[]> {
     const include = {
       User: true,
       Tag: true,
@@ -177,9 +172,11 @@ export class ArticleService {
           ArticleCommentReply: {
             include: {
               User: true,
+              ArticleCommentReplyLike: true,
               ChildReplies: {
                 include: {
                   User: true,
+                  ArticleCommentReplyLike: true,
                 },
               },
             },
@@ -214,7 +211,7 @@ export class ArticleService {
       data: { count_view: article.count_view + 1 },
     });
 
-    return this.transformArticle(article);
+    return await ArticleModel.toJson(article);
   }
 
   async update(id: string, dto: UpdateArticleDto, file?: Express.Multer.File) {
@@ -317,7 +314,7 @@ export class ArticleService {
         await deleteFile(article.Cover.filename, this.articleStorageConfig);
       }
 
-      return this.transformArticle(transaction);
+      return await ArticleModel.toJson(transaction);
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating article: ${error.message}`,
@@ -396,7 +393,7 @@ export class ArticleService {
         },
       );
 
-      return this.transformArticle(transaction);
+      return await ArticleModel.toJson(transaction);
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating article: ${error.message}`,
@@ -530,7 +527,7 @@ export class ArticleService {
       return [];
     }
 
-    return this.transformArticle(article);
+    return await ArticleModel.toJson(article);
   }
 
   async comment(article_id: string, user_id: string, comment: commentDto) {
@@ -556,7 +553,7 @@ export class ArticleService {
         },
       });
 
-      return this.transformComment(newComment);
+      return await Comment.toJson(newComment);
     } catch (error) {
       throw new InternalServerErrorException(
         `Error commenting article: ${error.message}`,
@@ -633,7 +630,7 @@ export class ArticleService {
       },
     });
 
-    return this.transformReply(reply);
+    return await Reply.toJson(reply);
   }
 
   async replyReply(
@@ -662,7 +659,7 @@ export class ArticleService {
       },
     });
 
-    return reply;
+    return await Reply.toJson(reply);
   }
 
   async likeReply(
@@ -706,138 +703,5 @@ export class ArticleService {
       console.error('Error in likeReply:', error);
       throw new InternalServerErrorException('Failed to like/unlike the reply');
     }
-  }
-
-  private async transformArticle(
-    articles: any | any[],
-  ): Promise<ArticleModel<User> | ArticleModel<User>[]> {
-    const appUrl = this.configService.get('APP_URL');
-
-    const generateArticleModel = async (
-      a: any,
-    ): Promise<ArticleModel<User>> => {
-      return {
-        article_id: a.article_id ?? '',
-        title: a.title ?? '',
-        content: a.content ?? '',
-        cover:
-          (a.Cover?.filename &&
-            (await generateFileUrl(
-              a.Cover.filename,
-              appUrl,
-              this.articleStorageConfig,
-            ))) ||
-          null,
-        status: a.status ?? '',
-        count_likes: a?.ArticleLike ? a.ArticleLike.length : 0,
-        count_views: a.count_view ?? 0,
-        marked_bookmark:
-          a?.ArticleBookmark &&
-          a.ArticleBookmark.some(
-            (bookmark: any) => bookmark.user_id === a.user_id,
-          ),
-        marked_like:
-          a?.ArticleLike &&
-          a.ArticleLike.some((like: any) => like.user_id === a.user_id),
-        user: {
-          user_id: a.User?.user_id ?? '',
-          username: a.User?.username ?? '',
-          email: a.User?.email ?? '',
-          fullname: a.User?.fullname ?? '',
-          profile:
-            (a.User?.profile &&
-              (await generateFileUrl(
-                a.User.profile,
-                appUrl,
-                profileStorageConfig,
-              ))) ||
-            '',
-        },
-        tag: (a?.Tag || []).map((tag: any) => tag.tag_name ?? ''),
-        comment:
-          a.ArticleComment &&
-          (await Promise.all(
-            a.ArticleComment.map((c: any) => this.transformComment(c)),
-          )),
-        created_at: a.created_at ?? '',
-        updated_at: a.updated_at ?? '',
-      };
-    };
-
-    if (Array.isArray(articles)) {
-      return Promise.all(articles.map(generateArticleModel));
-    } else {
-      return generateArticleModel(articles);
-    }
-  }
-
-  private async transformComment(comment: any): Promise<Comment> {
-    const appUrl = this.configService.get('APP_URL');
-
-    const childReplies = comment.ArticleCommentReply?.ChildReplies
-      ? await Promise.all(
-          comment.ArticleCommentReply.ChildReplies.map((r: any) =>
-            this.transformReply(r),
-          ),
-        )
-      : [];
-
-    const replies = comment.ArticleCommentReply
-      ? await Promise.all(
-          comment.ArticleCommentReply.map((r: any) => this.transformReply(r)),
-        )
-      : [];
-
-    return {
-      comment_id: comment.comment_id ?? '',
-      comment: comment.comment ?? '',
-      count_like: (comment?.CommentLike && comment.CommentLike.length) || 0,
-      user: {
-        user_id: comment.User?.user_id ?? '',
-        username: comment.User?.username ?? '',
-        email: comment.User?.email ?? '',
-        fullname: comment.User?.fullname ?? '',
-        profile:
-          (comment.User?.profile &&
-            (await generateFileUrl(
-              comment.User.profile,
-              appUrl,
-              profileStorageConfig,
-            ))) ||
-          '',
-      },
-      replies: [...replies, ...childReplies],
-      created_at: comment.created_at ?? '',
-      updated_at: comment.updated_at ?? '',
-    };
-  }
-
-  private async transformReply(reply: any): Promise<Reply> {
-    const appUrl = this.configService.get('APP_URL');
-    return {
-      reply_id: reply.reply_id ?? '',
-      parent_id: reply.parent_id ?? '',
-      comment: reply.comment ?? '',
-      count_like:
-        (reply?.ArticleCommentReplyLike &&
-          reply.ArticleCommentReplyLike.length) ||
-        0,
-      user: {
-        user_id: reply.User?.user_id ?? '',
-        username: reply.User?.username ?? '',
-        email: reply.User?.email ?? '',
-        fullname: reply.User?.fullname ?? '',
-        profile:
-          (reply.User?.profile &&
-            (await generateFileUrl(
-              reply.User.profile,
-              appUrl,
-              profileStorageConfig,
-            ))) ||
-          '',
-      },
-      created_at: reply.created_at ?? '',
-      updated_at: reply.updated_at ?? '',
-    };
   }
 }
