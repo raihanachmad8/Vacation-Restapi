@@ -213,7 +213,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/like')
+  @Patch(':id/like')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -229,7 +229,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/bookmark')
+  @Patch(':id/bookmark')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -260,7 +260,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/comment')
+  @Patch(':id/comment')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -281,7 +281,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/comment/:comment_id/like')
+  @Patch(':id/comment/:comment_id/like')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -302,7 +302,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/comment/:comment_id/reply')
+  @Patch(':id/comment/:comment_id/reply')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -325,7 +325,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/comment/:comment_id/reply/:reply_id')
+  @Patch(':id/comment/:comment_id/reply/:reply_id')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
@@ -350,7 +350,7 @@ export class ArticleController {
     });
   }
 
-  @Post(':id/comment/:comment_id/reply/:reply_id/like')
+  @Patch(':id/comment/:comment_id/reply/:reply_id/like')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
   @Roles(Role.MEMBER)
