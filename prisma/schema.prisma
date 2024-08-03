@@ -24,14 +24,14 @@ model User {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  PersonalAccessToken PersonalAccessToken[]
-  Article             Article[]
-  File                File[]
-  ArticleBookmark     ArticleBookmark[]
-  ArticleLike         ArticleLike[]
-  ArticleComment      ArticleComment[]
-  ArticleCommentLike  ArticleCommentLike[]
-  ArticleCommentReply ArticleCommentReply[]
+  PersonalAccessToken     PersonalAccessToken[]
+  Article                 Article[]
+  File                    File[]
+  ArticleBookmark         ArticleBookmark[]
+  ArticleLike             ArticleLike[]
+  ArticleComment          ArticleComment[]
+  ArticleCommentLike      ArticleCommentLike[]
+  ArticleCommentReply     ArticleCommentReply[]
   ArticleCommentReplyLike ArticleCommentReplyLike[]
 
   @@map("users")
@@ -68,14 +68,14 @@ model Article {
   content    String   @db.Text
   cover_id   String?  @db.Char(36)
   user_id    String   @db.Char(36)
-  status     ArticleStatus @default(PENDING)
+  status     Status   @default(PENDING)
   count_view Int      @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  User  User? @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
-  Tag   Tag[] @relation("ArticleTag")
-  Cover File? @relation(fields: [cover_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  User            User?             @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  Tag             Tag[]             @relation("ArticleTag")
+  Cover           File?             @relation(fields: [cover_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   ArticleBookmark ArticleBookmark[]
   ArticleLike     ArticleLike[]
   ArticleComment  ArticleComment[]
@@ -101,7 +101,7 @@ model File {
   @@map("files")
 }
 
-enum ArticleStatus {
+enum Status {
   PENDING
   REVISION
   REJECT
@@ -113,7 +113,7 @@ model ArticleBookmark {
   user_id    String   @db.Char(36)
   created_at DateTime @default(now())
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  User    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   Article Article @relation(fields: [article_id], references: [article_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([article_id, user_id])
@@ -125,7 +125,7 @@ model ArticleLike {
   user_id    String   @db.Char(36)
   created_at DateTime @default(now())
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  User    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   Article Article @relation(fields: [article_id], references: [article_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([article_id, user_id])
@@ -140,10 +140,10 @@ model ArticleComment {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  Article Article @relation(fields: [article_id], references: [article_id], onDelete: Cascade, onUpdate: NoAction)
+  User                User                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  Article             Article               @relation(fields: [article_id], references: [article_id], onDelete: Cascade, onUpdate: NoAction)
   ArticleCommentReply ArticleCommentReply[]
-  ArticleCommentLike ArticleCommentLike[]
+  ArticleCommentLike  ArticleCommentLike[]
 
   @@map("article_comments")
 }
@@ -153,7 +153,7 @@ model ArticleCommentLike {
   user_id    String   @db.Char(36)
   created_at DateTime @default(now())
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  User           User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   ArticleComment ArticleComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([comment_id, user_id])
@@ -165,29 +165,28 @@ model ArticleCommentReply {
   comment_id String   @db.Char(36)
   parent_id  String?  @db.Char(36)
   user_id    String   @db.Char(36)
-  comment      String   @db.Text
+  comment    String   @db.Text
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  ArticleComment ArticleComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  User                    User                      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  ArticleComment          ArticleComment            @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
   ArticleCommentReplyLike ArticleCommentReplyLike[]
-  
-  ParentReply         ArticleCommentReply?  @relation("ReplyReplies", fields: [parent_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
-  ChildReplies        ArticleCommentReply[] @relation("ReplyReplies")
+
+  ParentReply  ArticleCommentReply?  @relation("ReplyReplies", fields: [parent_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
+  ChildReplies ArticleCommentReply[] @relation("ReplyReplies")
 
   @@map("article_comment_replies")
 }
 
 model ArticleCommentReplyLike {
-  reply_id String   @db.Char(36)
-  user_id  String   @db.Char(36)
+  reply_id   String   @db.Char(36)
+  user_id    String   @db.Char(36)
   created_at DateTime @default(now())
 
-  User    User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  User                User                @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   ArticleCommentReply ArticleCommentReply @relation(fields: [reply_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([reply_id, user_id])
   @@map("article_comment_reply_likes")
 }
-

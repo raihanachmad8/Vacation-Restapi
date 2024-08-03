@@ -20,7 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { articleFilter } from './types';
 import { ArticleModel, Paging, WebResponse } from 'src/models';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { ArticleStatus, Role, User } from '@prisma/client';
+import { Status, Role, User } from '@prisma/client';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Public } from 'src/common/decorators';
@@ -147,7 +147,7 @@ export class ArticleController {
   ): Promise<WebResponse<any>> {
     await this.articleService.changeStatus(
       id,
-      ArticleStatus.APPROVE,
+      Status.APPROVE,
       user.user_id,
     );
     return new WebResponse<any>({
@@ -166,7 +166,7 @@ export class ArticleController {
   ): Promise<WebResponse<any>> {
     await this.articleService.changeStatus(
       id,
-      ArticleStatus.REVISION,
+      Status.REVISION,
       user.user_id,
     );
     return new WebResponse<any>({
@@ -185,7 +185,7 @@ export class ArticleController {
   ): Promise<WebResponse<any>> {
     await this.articleService.changeStatus(
       id,
-      ArticleStatus.REJECT,
+      Status.REJECT,
       user.user_id,
     );
     return new WebResponse<any>({
@@ -204,7 +204,7 @@ export class ArticleController {
   ): Promise<WebResponse<any>> {
     await this.articleService.changeStatus(
       id,
-      ArticleStatus.PENDING,
+      Status.PENDING,
       user.user_id,
     );
     return new WebResponse<any>({

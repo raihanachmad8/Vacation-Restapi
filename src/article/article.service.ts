@@ -14,7 +14,7 @@ import {
   uploadFile,
 } from 'src/common/utils/file-storage';
 import { FileStorageOptions } from 'src/file-storage/types';
-import { ArticleStatus, Role } from '@prisma/client';
+import { Status, Role } from '@prisma/client';
 import { articleStorageConfig } from 'src/common/utils';
 import { commentDto } from './dto/comment.dto';
 import { Comment } from 'src/models/comment';
@@ -104,14 +104,14 @@ export class ArticleService {
     const skip = page ? (parseInt(page, 10) - 1) * take : 0;
     const orderConfig = orderBy ? { [orderBy]: order || 'asc' } : undefined;
 
-    const statusValues: ArticleStatus[] = stat
+    const statusValues: Status[] = stat
       ? stat
           .split(',')
           .map((status) => status.trim().toUpperCase())
-          .filter((status): status is keyof typeof ArticleStatus =>
-            Object.values(ArticleStatus).includes(status as ArticleStatus),
+          .filter((status): status is keyof typeof Status =>
+            Object.values(Status).includes(status as Status),
           )
-          .map((status) => ArticleStatus[status as keyof typeof ArticleStatus])
+          .map((status) => Status[status as keyof typeof Status])
       : ['APPROVE'];
 
     const whereConditions = {
@@ -267,11 +267,11 @@ export class ArticleService {
           let articleStatus = article.status;
 
           switch (articleStatus) {
-            case ArticleStatus.REJECT:
-              articleStatus = ArticleStatus.PENDING;
+            case Status.REJECT:
+              articleStatus = Status.PENDING;
               break;
             case 'REVISION':
-              articleStatus = ArticleStatus.PENDING;
+              articleStatus = Status.PENDING;
               break;
             default:
               articleStatus = article.status;
@@ -360,7 +360,7 @@ export class ArticleService {
     }
   }
 
-  async changeStatus(id: string, status: ArticleStatus, user_id: string) {
+  async changeStatus(id: string, status: Status, user_id: string) {
     const article = await this.prismaService.article.findUnique({
       where: { article_id: id },
       include: { User: true, Tag: true, Cover: true },

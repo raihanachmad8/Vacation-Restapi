@@ -1,5 +1,5 @@
 import {
-  ArticleStatus,
+  Status,
   FileVisibility,
   PrismaClient,
   Role,
@@ -29,10 +29,10 @@ export class ArticleSeeder extends ContractSeeder {
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(),
         status: faker.helpers.arrayElement([
-          ArticleStatus.PENDING,
-          ArticleStatus.APPROVE,
-          ArticleStatus.REJECT,
-          ArticleStatus.REVISION,
+          Status.PENDING,
+          Status.APPROVE,
+          Status.REJECT,
+          Status.REVISION,
         ]),
         count_views: faker.number.int({ min: 0, max: 1000 }),
         count_likes: faker.number.int({ min: 0, max: 1000 }),
