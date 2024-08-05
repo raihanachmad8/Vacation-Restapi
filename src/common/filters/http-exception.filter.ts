@@ -1,4 +1,3 @@
-// src/common/filters/http-exception.filter.ts
 import {
   ExceptionFilter,
   Catch,
@@ -6,14 +5,31 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ZodError } from 'zod';
 
-@Catch(HttpException)
+@Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const status = exception.getStatus();
-    const exceptionResponse = exception.getResponse();
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : 500;
+    const exceptionResponse =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : 'Internal server error';
+
+    if (exception instanceof ZodError) {
+      const errorResponse = {
+        statusCode: 400,
+        timestamp: new Date().toISOString(),
+        message: 'Validation failed',
+        errors: exception.errors,
+      };
+
+      response.status(400).json(errorResponse);
+      return;
+    }
 
     const errorResponse = {
       statusCode: status,

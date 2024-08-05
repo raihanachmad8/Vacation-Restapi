@@ -1,7 +1,7 @@
 import { Role } from '@prisma/client';
-import { generateFileUrl, profileStorageConfig } from 'src/common/utils';
+import { generateFileUrl, profileStorageConfig } from '@src/common/utils';
 
-export class User {
+export class UserModel {
   user_id: string;
   fullname: string;
   email: string;
@@ -11,8 +11,8 @@ export class User {
   created_at?: Date;
   updated_at?: Date;
 
-  static async toJson(partial: Partial<User>): Promise<User> {
-    const user = new User();
+  static async toJson(partial: Partial<UserModel>): Promise<UserModel> {
+    const user = new UserModel();
     partial.user_id && (user.user_id = partial.user_id);
     partial.fullname && (user.fullname = partial.fullname);
     partial.email && (user.email = partial.email);

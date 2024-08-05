@@ -1,4 +1,3 @@
-// file-ownership.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -8,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '@src/prisma/prisma.service';
 import { FileVisibility } from '@prisma/client';
 
 @Injectable()

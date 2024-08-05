@@ -2,9 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { PrismaService } from './../src/prisma/prisma.service';
-import { CustomValidationPipe } from './../src/common/pipes/custom-validation.pipe';
-import { HttpExceptionFilter } from './../src/common/filters/http-exception.filter';
+import { PrismaService } from '@src/prisma/prisma.service';
+import { HttpExceptionFilter } from '@src/common/filters/http-exception.filter';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -24,8 +23,6 @@ describe('AuthController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app = moduleFixture.createNestApplication();
 
-    // Apply global settings
-    app.useGlobalPipes(new CustomValidationPipe());
     app.useGlobalFilters(new HttpExceptionFilter());
 
     prismaService = moduleFixture.get<PrismaService>(PrismaService);

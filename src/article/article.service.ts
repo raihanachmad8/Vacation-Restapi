@@ -4,31 +4,40 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateArticleDto, UpdateArticleDto } from './dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '@src/prisma/prisma.service';
 import { articleFilter } from './types';
-import { ArticleModel, Paging } from 'src/models';
+import { ArticleModel, Paging } from '@src/models';
 import {
   deleteFile,
   generateRandomFileName,
   uploadFile,
-} from 'src/common/utils/file-storage';
-import { FileStorageOptions } from 'src/file-storage/types';
+} from '@src/common/utils/file-storage';
+import { FileStorageOptions } from '@src/file-storage/types';
 import { Status, Role } from '@prisma/client';
-import { articleStorageConfig } from 'src/common/utils';
-import { commentDto } from './dto/comment.dto';
-import { Comment } from 'src/models/comment';
-import { Reply } from 'src/models/replies';
+import { articleStorageConfig } from '@src/common/utils';
+import { CommentRequest } from './dto';
+import { CommentModel } from '@src/models/comment.model';
+import { ReplyModel } from '@src/models/replies.model';
+import { ValidationService } from '@src/common/validation.service';
+import { ArticleValidation } from './artcile.validation';
+import { CreateArticleRequest, UpdateArticleRequest } from './dto';
 
 @Injectable()
 export class ArticleService {
   private readonly articleStorageConfig: FileStorageOptions =
     articleStorageConfig;
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private validateService: ValidationService,
+  ) {}
 
-  async create(dto: CreateArticleDto, file: Express.Multer.File) {
-    const { tags, user_id, ...articleData } = dto;
+  async create(request: CreateArticleRequest, file: Express.Multer.File) {
+    const CreateArticleRequest = this.validateService.validate(
+      ArticleValidation.CREATE_ARTICLE_REQUEST,
+      request,
+    );
+    const { tags, user_id, ...articleData } = CreateArticleRequest;
     const coverFileName = await generateRandomFileName(file);
 
     try {
@@ -97,7 +106,7 @@ export class ArticleService {
 
   async search(query: articleFilter): Promise<{
     paging: Paging;
-    data: ArticleModel | ArticleModel[];
+    data: ArticleModel[];
   }> {
     const { u, stat, s, limit, page, orderBy, order } = query;
     const take = limit ? Math.min(parseInt(limit, 10), 25) : 10;
@@ -153,14 +162,13 @@ export class ArticleService {
 
     return {
       paging,
-      data: await Promise.all(articles.map(ArticleModel.toJson)),
+      data: await Promise.all(
+        articles.map((article) => ArticleModel.toJson(article)),
+      ),
     };
   }
 
-  async find(
-    id: string,
-    user_id?: string,
-  ): Promise<ArticleModel | ArticleModel[]> {
+  async find(article_id: string, user_id?: string): Promise<ArticleModel> {
     const include = {
       User: true,
       Tag: true,
@@ -186,11 +194,7 @@ export class ArticleService {
     };
 
     if (user_id) {
-      include['ArticleLike'] = {
-        where: {
-          user_id,
-        },
-      };
+      include['ArticleLike'] = true;
       include['ArticleBookmark'] = {
         where: {
           user_id,
@@ -198,7 +202,7 @@ export class ArticleService {
       };
     }
     const article = await this.prismaService.article.findUnique({
-      where: { article_id: id },
+      where: { article_id },
       include: include,
     });
 
@@ -207,17 +211,25 @@ export class ArticleService {
     }
 
     await this.prismaService.article.update({
-      where: { article_id: id },
+      where: { article_id },
       data: { count_view: article.count_view + 1 },
     });
 
-    return await ArticleModel.toJson(article);
+    return await ArticleModel.toJson(article, user_id);
   }
 
-  async update(id: string, dto: UpdateArticleDto, file?: Express.Multer.File) {
-    const { tags, user_id, ...articleData } = dto;
+  async update(
+    article_id: string,
+    request: UpdateArticleRequest,
+    file?: Express.Multer.File,
+  ) {
+    const UpdateArticleRequest = this.validateService.validate(
+      ArticleValidation.ARTICLE_UPDATE_REQUEST,
+      request,
+    );
+    const { tags, user_id, ...articleData } = UpdateArticleRequest;
     const article = await this.prismaService.article.findUnique({
-      where: { article_id: id },
+      where: { article_id: article_id },
       include: { User: true, Cover: true, Tag: true },
     });
 
@@ -279,7 +291,7 @@ export class ArticleService {
           }
 
           const updatedArticle = await prisma.article.update({
-            where: { article_id: id },
+            where: { article_id: article_id },
             data: {
               ...articleData,
               status: articleStatus,
@@ -500,7 +512,7 @@ export class ArticleService {
     }
   }
 
-  async getBookmark(user_id: string) {
+  async getBookmark(user_id: string): Promise<ArticleModel[]> {
     const article = await this.prismaService.article.findMany({
       where: {
         ArticleBookmark: {
@@ -513,13 +525,6 @@ export class ArticleService {
         User: true,
         Tag: true,
         Cover: true,
-        ArticleComment: {
-          include: {
-            User: true,
-          },
-        },
-        ArticleLike: true,
-        ArticleBookmark: true,
       },
     });
 
@@ -527,10 +532,12 @@ export class ArticleService {
       return [];
     }
 
-    return await ArticleModel.toJson(article);
+    return await Promise.all(
+      article.map((article) => ArticleModel.toJson(article)),
+    );
   }
 
-  async comment(article_id: string, user_id: string, comment: commentDto) {
+  async comment(article_id: string, user_id: string, comment: CommentRequest) {
     const article = await this.prismaService.article.findUnique({
       where: { article_id },
       include: { ArticleComment: true },
@@ -553,7 +560,7 @@ export class ArticleService {
         },
       });
 
-      return await Comment.toJson(newComment);
+      return await CommentModel.toJson(newComment);
     } catch (error) {
       throw new InternalServerErrorException(
         `Error commenting article: ${error.message}`,
@@ -585,9 +592,11 @@ export class ArticleService {
         };
       } else {
         // Create a new like
-        await this.prismaService.articleCommentLike.create({
+        const like = await this.prismaService.articleCommentLike.create({
           data: { comment_id, user_id },
         });
+
+        console.log('like:', like);
         return {
           marked_like: true,
         };
@@ -604,7 +613,7 @@ export class ArticleService {
     article_id: string,
     comment_id: string,
     user_id: string,
-    commentDto: commentDto,
+    comment: CommentRequest,
   ) {
     const parentComment = await this.prismaService.articleComment.findUnique({
       where: { comment_id },
@@ -616,7 +625,7 @@ export class ArticleService {
 
     const reply = await this.prismaService.articleCommentReply.create({
       data: {
-        ...commentDto,
+        ...comment,
         user_id,
         comment_id,
       },
@@ -630,7 +639,7 @@ export class ArticleService {
       },
     });
 
-    return await Reply.toJson(reply);
+    return await ReplyModel.toJson(reply);
   }
 
   async replyReply(
@@ -638,7 +647,7 @@ export class ArticleService {
     comment_id: string,
     reply_id: string,
     user_id: string,
-    commentDto: commentDto,
+    comment: CommentRequest,
   ) {
     const parentReply = await this.prismaService.articleCommentReply.findUnique(
       {
@@ -652,14 +661,14 @@ export class ArticleService {
 
     const reply = await this.prismaService.articleCommentReply.create({
       data: {
-        ...commentDto,
+        ...comment,
         user_id,
         comment_id,
         parent_id: reply_id,
       },
     });
 
-    return await Reply.toJson(reply);
+    return await ReplyModel.toJson(reply);
   }
 
   async likeReply(

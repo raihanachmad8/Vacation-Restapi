@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload } from '../types';
 import { Request } from 'express';
-import { PrismaService } from './../../prisma/prisma.service';
+import { PrismaService } from '@src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()

@@ -6,16 +6,16 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDto, RegistrationDto } from './dto';
-import { Tokens } from './types';
-import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { WebResponse } from './../models';
-import { JwtAuthGuard, JwtRefreshAuthGuard } from './guards';
-import { Public } from 'src/common/decorators';
+import { WebResponse } from '@src/models';
+import { JwtRefreshAuthGuard } from './guards';
+import { Public } from '@src/common/decorators';
+import { Tokens } from '@src/models/tokens';
+import { CurrentUser } from '@src/common/decorators/current-user.decorator';
+import { User } from '@prisma/client';
+import { RegisterRequest, LoginRequest } from './dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,8 +27,10 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
-  async register(@Body() dto: RegistrationDto): Promise<WebResponse<Tokens>> {
-    const token = await this.authService.register(dto);
+  async register(
+    @Body() request: RegisterRequest,
+  ): Promise<WebResponse<Tokens>> {
+    const token = await this.authService.register(request);
 
     return new WebResponse<Tokens>({
       message: 'User successfully registered',
@@ -40,8 +42,8 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() dto: AuthDto): Promise<WebResponse<Tokens>> {
-    const token = await this.authService.login(dto);
+  async login(@Body() request: LoginRequest): Promise<WebResponse<Tokens>> {
+    const token = await this.authService.login(request);
     return new WebResponse<Tokens>({
       message: 'User successfully logged in',
       data: token,
@@ -49,11 +51,10 @@ export class AuthController {
     });
   }
 
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Delete('logout')
-  async logout(@Req() req: Request): Promise<WebResponse> {
-    await this.authService.logout(req['user']['user_id'], req['user']['token']);
+  async logout(@CurrentUser() user: User): Promise<WebResponse> {
+    await this.authService.logout(user.user_id, user['token']);
 
     return new WebResponse({
       message: 'User successfully logged out',
@@ -61,14 +62,12 @@ export class AuthController {
     });
   }
 
-  @UseGuards(JwtRefreshAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtRefreshAuthGuard)
   @Post('refresh')
-  async refresh(@Req() req: Request): Promise<WebResponse<Tokens>> {
-    const token = await this.authService.refresh(
-      req['user']['user_id'],
-      req['user']['token'],
-    );
+  async refresh(@CurrentUser() user: User): Promise<WebResponse<Tokens>> {
+    const token = await this.authService.refresh(user.user_id, user['token']);
 
     return new WebResponse<Tokens>({
       message: 'Token successfully refreshed',

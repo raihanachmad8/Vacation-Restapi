@@ -4,8 +4,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as winston from 'winston';
 import { UserAgentMiddleware } from './middleware/user-agent.middleware';
+import { ValidationService } from './validation.service';
 
-const logDir = path.join(__dirname, './../../logs');
+const logDir = path.join(__dirname, '@src/../logs');
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
@@ -40,9 +41,9 @@ if (!fs.existsSync(logDir)) {
       ],
     }),
   ],
-  exports: [],
+  providers: [ValidationService],
+  exports: [ValidationService],
 })
-// export class CommonModule {} apply middleware
 export class CommonModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(UserAgentMiddleware).forRoutes('*');

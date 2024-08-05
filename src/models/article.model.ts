@@ -1,6 +1,7 @@
-import { articleStorageConfig, generateFileUrl } from 'src/common/utils';
-import { Comment } from './comment';
-import { User } from './user';
+import { articleStorageConfig, generateFileUrl } from '@src/common/utils';
+import { CommentModel } from './comment.model';
+import { UserModel } from './user';
+
 export class ArticleModel {
   article_id: number;
   title: string;
@@ -11,13 +12,16 @@ export class ArticleModel {
   count_likes: number;
   marked_bookmark?: boolean;
   marked_like?: boolean;
-  user: User;
+  user: UserModel;
   tag: string[];
   comment?: Comment[];
   created_at: Date;
   updated_at: Date;
 
-  static async toJson(partial: Partial<any>): Promise<ArticleModel> {
+  static async toJson(
+    partial: Partial<any>,
+    marked_user_id?: string,
+  ): Promise<ArticleModel> {
     const article = new ArticleModel();
     partial.article_id && (article.article_id = partial.article_id);
     partial.title && (article.title = partial.title);
@@ -32,19 +36,19 @@ export class ArticleModel {
     partial.count_view && (article.count_views = partial.count_view);
     partial.ArticleBookmark &&
       (article.marked_bookmark = partial.ArticleBookmark.some(
-        (bookmark: any) => bookmark.user_id === partial.user_id,
+        (bookmark: any) => bookmark.user_id === marked_user_id,
       ));
     partial.ArticleLike &&
       (article.marked_like = partial.ArticleLike.some(
-        (like: any) => like.user_id === partial.user_id,
+        (like: any) => like.user_id === marked_user_id,
       ));
     partial.User &&
-      (article.user = await Promise.resolve(User.toJson(partial.User)));
+      (article.user = await Promise.resolve(UserModel.toJson(partial.User)));
     partial.Tag && (article.tag = partial.Tag.map((tag: any) => tag.tag_name));
     partial.ArticleComment &&
       (await Promise.all(
         partial.ArticleComment.map(async (comment: any) =>
-          Comment.toJson(comment),
+          CommentModel.toJson(comment, marked_user_id),
         ),
       ).then((comments) => (article.comment = comments) as any));
     partial.created_at && (article.created_at = partial.created_at);

@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { TagService } from './tag.service';
-import { WebResponse } from 'src/models';
-import { Public } from 'src/common/decorators';
+import { WebResponse } from '@src/models';
+import { Public } from '@src/common/decorators';
 
 @Controller('tag')
 export class TagController {

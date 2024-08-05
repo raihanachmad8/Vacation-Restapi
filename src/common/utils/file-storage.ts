@@ -2,7 +2,7 @@ import { diskStorage } from 'multer';
 import { promises as fsPromises } from 'fs';
 import { dirname, extname, join } from 'path';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
-import { FileStorageOptions } from 'src/file-storage/types';
+import { FileStorageOptions } from '@src/file-storage/types';
 import { InternalServerErrorException } from '@nestjs/common';
 import { FileVisibility } from '@prisma/client';
 import axios from 'axios';

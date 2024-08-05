@@ -4,15 +4,18 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthDto, RegistrationDto } from './dto';
-import { PrismaService } from './../prisma/prisma.service';
-import { JWTRefreshToken, JWTAccessToken, Tokens } from './types';
+import { PrismaService } from '@src/prisma/prisma.service';
+import { JWTRefreshToken, JWTAccessToken } from './types';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './types';
 import ms from 'ms';
 import { User } from '@prisma/client';
+import { LoginRequest, RegisterRequest } from './dto';
+import { ValidationService } from '@src/common/validation.service';
+import { AuthValidation } from './auth.validation';
+import { Tokens } from '@src/models/tokens';
 
 @Injectable()
 export class AuthService {
@@ -20,24 +23,29 @@ export class AuthService {
     private prismaService: PrismaService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private validationService: ValidationService,
   ) {}
 
-  async register(dto: RegistrationDto): Promise<Tokens> {
+  async register(request: RegisterRequest): Promise<Tokens> {
+    const RegisterRequest = this.validationService.validate(
+      AuthValidation.REGISTER_REQUEST,
+      request,
+    );
     const user = await this.prismaService.user.findUnique({
-      where: { email: dto.email },
+      where: { email: RegisterRequest.email },
     });
 
     if (user) {
       throw new BadRequestException('User already exists');
     }
     const salt = await bcrypt.genSalt(10);
-    const hash = this.hashPassword(dto.password, salt);
+    const hash = this.hashPassword(RegisterRequest.password, salt);
 
     const newUser = await this.prismaService.user.create({
       data: {
-        fullname: dto.fullname,
-        username: dto.username,
-        email: dto.email,
+        fullname: RegisterRequest.fullname,
+        username: RegisterRequest.username,
+        email: RegisterRequest.email,
         password: hash,
         salt: salt,
       },
@@ -48,16 +56,20 @@ export class AuthService {
     return { access_token, refresh_token };
   }
 
-  async login(dto: AuthDto): Promise<Tokens> {
+  async login(request: LoginRequest): Promise<Tokens> {
+    const LoginRequest = this.validationService.validate(
+      AuthValidation.LOGIN_REQUEST,
+      request,
+    );
     const user = await this.prismaService.user.findUnique({
-      where: { email: dto.email },
+      where: { email: LoginRequest.email },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (bcrypt.compareSync(dto.password, user.password)) {
+    if (bcrypt.compareSync(LoginRequest.password, user.password)) {
       const { access_token, refresh_token } = await this.generateToken(user);
 
       return { access_token, refresh_token };

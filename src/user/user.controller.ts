@@ -9,12 +9,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { CurrentUser } from '@src/common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { WebResponse } from 'src/models';
-import { UpdateUserDto } from './dto';
+import { UserModel, WebResponse } from '@src/models';
 import { User } from '@prisma/client';
+import { UpdateUserRequest } from './dto';
 
 @Controller('user')
 export class UserController {
@@ -22,10 +22,10 @@ export class UserController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async get(@CurrentUser() user: User): Promise<WebResponse<User>> {
+  async get(@CurrentUser() user: User): Promise<WebResponse<UserModel>> {
     const response = await this.userService.get(user.user_id);
 
-    return new WebResponse<User>({
+    return new WebResponse<UserModel>({
       statusCode: HttpStatus.OK,
       message: 'User data retrieved',
       data: response,
@@ -37,7 +37,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async update(
     @CurrentUser() user: User,
-    @Body() dto: UpdateUserDto,
+    @Body() request: UpdateUserRequest,
     @UploadedFile(
       new ParseFilePipeBuilder()
         .addMaxSizeValidator({
@@ -52,20 +52,20 @@ export class UserController {
         }),
     )
     file?: Express.Multer.File,
-  ): Promise<WebResponse<User>> {
+  ): Promise<WebResponse<UserModel>> {
     if (file) {
-      dto.profile = file?.originalname;
+      request.profile = file?.originalname;
     }
 
-    const { profile, ...data } = dto;
+    const { profile, ...data } = request;
     if (Object.keys(data).length === 0 && !profile) {
       return new WebResponse<User>({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'No data to update',
       });
     }
-    const response = await this.userService.update(user.user_id, dto, file);
-    return new WebResponse<User>({
+    const response = await this.userService.update(user.user_id, request, file);
+    return new WebResponse<UserModel>({
       statusCode: HttpStatus.OK,
       message: 'User data updated',
       data: response,

@@ -6,7 +6,7 @@ import {
   deleteAllFiles,
   downloadAndSaveImage,
   profileStorageConfig,
-} from './../../src/common/utils';
+} from '@src/common/utils';
 
 export class UserSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {
