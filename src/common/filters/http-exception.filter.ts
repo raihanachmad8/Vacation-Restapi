@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   HttpException,
 } from '@nestjs/common';
+import { error } from 'console';
 import { Response } from 'express';
 import { ZodError } from 'zod';
 
@@ -24,6 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         statusCode: 400,
         timestamp: new Date().toISOString(),
         message: 'Validation failed',
+        error: 'Bad Request',
         errors: exception.errors,
       };
 

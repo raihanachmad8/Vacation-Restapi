@@ -33,6 +33,7 @@ model User {
   ArticleCommentLike      ArticleCommentLike[]
   ArticleCommentReply     ArticleCommentReply[]
   ArticleCommentReplyLike ArticleCommentReplyLike[]
+  HiddenGems              HiddenGems[]
 
   @@map("users")
 }
@@ -89,14 +90,16 @@ enum FileVisibility {
 }
 
 model File {
-  id         String         @id @default(uuid()) @db.Char(36)
-  filename   String         @db.VarChar(255)
-  visibility FileVisibility @default(PRIVATE)
-  user_id    String         @db.Char(36)
-  created_at DateTime       @default(now())
-  updated_at DateTime       @updatedAt
-  User       User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  Article    Article[]
+  id                      String         @id @default(uuid()) @db.Char(36)
+  filename                String         @db.VarChar(255)
+  visibility              FileVisibility @default(PRIVATE)
+  user_id                 String         @db.Char(36)
+  created_at              DateTime       @default(now())
+  updated_at              DateTime       @updatedAt
+  User                    User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  Article                 Article[]
+  hiddenGemsHidden_gem_id String?        @db.Char(36)
+  HiddenGems              HiddenGems[]   @relation("HiddenGemsFiles")
 
   @@map("files")
 }
@@ -189,4 +192,62 @@ model ArticleCommentReplyLike {
 
   @@id([reply_id, user_id])
   @@map("article_comment_reply_likes")
+}
+
+model HiddenGemsCategory {
+  category_id   String   @id @default(uuid()) @db.Char(36)
+  category_name String   @db.VarChar(255)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  HiddenGems HiddenGems[]
+
+  @@map("hidden_gems_categories")
+}
+
+model HiddenGems {
+  hidden_gem_id String   @id @default(uuid()) @db.Char(36)
+  operation_id  String   @db.Char(36)
+  title         String   @db.VarChar(255)
+  price_start   Int      @db.Int
+  price_end     Int      @db.Int
+  location      String   @db.VarChar(255)
+  rating        Float    @db.Float
+  category_id   String   @db.Char(36)
+  status        Status   @default(PENDING)
+  description   String   @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  User                  User                    @relation(fields: [operation_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGemsCategory    HiddenGemsCategory      @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  Photos                File[]                  @relation("HiddenGemsFiles")
+  OperatingDaysAndHours OperatingDaysAndHours[]
+
+  @@map("hidden_gems")
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model OperatingDaysAndHours {
+  operating_id  String    @id @default(uuid()) @db.Char(36)
+  hidden_gem_id String    @db.Char(36)
+  day           DayOfWeek
+  open_time     String    @db.VarChar(5)
+  close_time    String    @db.VarChar(5)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  HiddenGems HiddenGems @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([hidden_gem_id, day])
+  @@map("operating_days_and_hours")
 }

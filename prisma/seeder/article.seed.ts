@@ -5,7 +5,7 @@ import {
   articleStorageConfig,
   deleteAllFiles,
   downloadAndSaveImage,
-} from '@src/common/utils';
+} from './../../src/common/utils';
 
 export class ArticleSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {

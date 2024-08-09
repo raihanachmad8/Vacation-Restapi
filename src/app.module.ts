@@ -11,6 +11,7 @@ import { TagModule } from './tag/tag.module';
 import { UserService } from './user/user.service';
 import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
+import { HiddenGemsModule } from './hidden-gems/hidden-gems.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserModule } from './user/user.module';
     FileStorageModule,
     TagModule,
     UserModule,
+    HiddenGemsModule,
   ],
   providers: [
     {

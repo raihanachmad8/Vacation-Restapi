@@ -10,3 +10,8 @@ export const articleStorageConfig: FileStorageOptions = {
   visibility: FileVisibility.PUBLIC,
   storageFolder: 'articles',
 };
+
+export const hiddenGemsStorageConfig: FileStorageOptions = {
+  visibility: FileVisibility.PUBLIC,
+  storageFolder: 'hidden-gems',
+};

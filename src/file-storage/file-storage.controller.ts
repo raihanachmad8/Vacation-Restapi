@@ -9,15 +9,16 @@ export class FileStorageController {
   constructor(private readonly fileStorageService: FileStorageService) {}
 
   @Public()
-  @Get('public/articles/:filename')
+  @Get('public/:folder/:filename')
   async getPublicArticleFile(
+    @Param('folder') folder: string,
     @Param('filename') filename: string,
     @Res() res: Response,
   ) {
     try {
       const buffer = await this.fileStorageService.getFile(
         filename,
-        FileStorageService.PUBLIC('articles'),
+        FileStorageService.PUBLIC(folder),
       );
       const mimeType = mime.lookup(filename);
       res.setHeader('Content-Type', mimeType);
@@ -32,27 +33,27 @@ export class FileStorageController {
     }
   }
 
-  @Public()
-  @Get('public/profiles/:filename')
-  async getPublicProfileFile(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ) {
-    try {
-      const buffer = await this.fileStorageService.getFile(
-        filename,
-        FileStorageService.PUBLIC('profiles'),
-      );
-      const mimeType = mime.lookup(filename);
-      res.setHeader('Content-Type', mimeType);
-      res.send(buffer);
-    } catch (error) {
-      res.status(404).send({
-        statusCode: 404,
-        timestamp: new Date().toISOString(),
-        message: 'File not found',
-        error: 'Not Found',
-      });
-    }
-  }
+  // @Public()
+  // @Get('public/profiles/:filename')
+  // async getPublicProfileFile(
+  //   @Param('filename') filename: string,
+  //   @Res() res: Response,
+  // ) {
+  //   try {
+  //     const buffer = await this.fileStorageService.getFile(
+  //       filename,
+  //       FileStorageService.PUBLIC('profiles'),
+  //     );
+  //     const mimeType = mime.lookup(filename);
+  //     res.setHeader('Content-Type', mimeType);
+  //     res.send(buffer);
+  //   } catch (error) {
+  //     res.status(404).send({
+  //       statusCode: 404,
+  //       timestamp: new Date().toISOString(),
+  //       message: 'File not found',
+  //       error: 'Not Found',
+  //     });
+  //   }
+  // }
 }
