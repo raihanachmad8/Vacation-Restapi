@@ -15,3 +15,8 @@ export const hiddenGemsStorageConfig: FileStorageOptions = {
   visibility: FileVisibility.PUBLIC,
   storageFolder: 'hidden-gems',
 };
+
+export const globalFileStorageConfig: FileStorageOptions = {
+  visibility: FileVisibility.PUBLIC,
+  storageFolder: 'file-storage',
+};
