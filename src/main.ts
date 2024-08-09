@@ -6,6 +6,12 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    methods: 'GET,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+  });
   app.useGlobalFilters(new HttpExceptionFilter());
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
