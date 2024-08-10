@@ -41,7 +41,6 @@ export class HiddenGemsService {
   }
 
   async createHiddenGems(request: CreateHiddenGemsRequest) {
-    console.log('Creating hidden gems');
     const validatedRequest = this.validationService.validate(
       HiddenGemsValidation.CREATE_HIDDEN_GEMS_REQUEST,
       request,
@@ -203,10 +202,6 @@ export class HiddenGemsService {
       }
     }
 
-    console.log(u, user);
-
-    console.log(status);
-
     const where = {
       ...(u ? { User: { user_id: u } } : {}),
       ...(status.length > 0 ? { status: { in: status } } : {}),
@@ -327,8 +322,6 @@ export class HiddenGemsService {
       (photo) =>
         !validatedRequest.photos.some((p) => p.originalname === photo.filename),
     );
-
-    console.log(oldPhotoFilenames, newPhotos, deletePhotos);
 
     try {
       // Start transaction

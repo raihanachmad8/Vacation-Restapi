@@ -38,14 +38,6 @@ CREATE TABLE `files` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- CreateTable
-CREATE TABLE `_ArticleToTag` (
-    `A` CHAR(36) NOT NULL,
-    `B` VARCHAR(255) NOT NULL,
-
-    UNIQUE INDEX `_ArticleToTag_AB_unique`(`A`, `B`),
-    INDEX `_ArticleToTag_B_index`(`B`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
 ALTER TABLE `refresh_tokens` ADD CONSTRAINT `refresh_tokens_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -58,9 +50,3 @@ ALTER TABLE `articles` ADD CONSTRAINT `articles_cover_id_fkey` FOREIGN KEY (`cov
 
 -- AddForeignKey
 ALTER TABLE `files` ADD CONSTRAINT `files_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE `_ArticleToTag` ADD CONSTRAINT `_ArticleToTag_A_fkey` FOREIGN KEY (`A`) REFERENCES `articles`(`article_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `_ArticleToTag` ADD CONSTRAINT `_ArticleToTag_B_fkey` FOREIGN KEY (`B`) REFERENCES `tags`(`tag_name`) ON DELETE CASCADE ON UPDATE CASCADE;

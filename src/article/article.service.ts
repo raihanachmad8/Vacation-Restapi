@@ -591,12 +591,9 @@ export class ArticleService {
           marked_like: false,
         };
       } else {
-        // Create a new like
-        const like = await this.prismaService.articleCommentLike.create({
+        await this.prismaService.articleCommentLike.create({
           data: { comment_id, user_id },
         });
-
-        console.log('like:', like);
         return {
           marked_like: true,
         };

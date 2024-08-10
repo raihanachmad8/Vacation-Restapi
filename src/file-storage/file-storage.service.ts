@@ -59,7 +59,6 @@ export class FileStorageService {
     file: FileRequest,
     fileStorageOptions: FileStorageOptions,
   ): Promise<string> {
-    console.log(file);
     const validatedFile = this.validationService.validate(
       FileStorageValidation.FILE_STORAGE_REQUEST,
       file,

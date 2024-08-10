@@ -47,7 +47,6 @@ export class UserService {
       UserValidation.UPDATE_USER_REQUEST,
       data,
     );
-    console.log('UpdateUserRequest', UpdateUserRequest);
 
     const user = await this.prismaService.user.findUnique({
       where: {
