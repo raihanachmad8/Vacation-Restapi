@@ -14,7 +14,7 @@ CREATE TABLE `hidden_gems_categories` (
 -- CreateTable
 CREATE TABLE `hidden_gems` (
     `hidden_gem_id` CHAR(36) NOT NULL,
-    `operation_id` CHAR(36) NOT NULL,
+    `user_id` CHAR(36) NOT NULL,
     `title` VARCHAR(255) NOT NULL,
     `price_start` INTEGER NOT NULL,
     `price_end` INTEGER NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE `_HiddenGemsFiles` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `hidden_gems` ADD CONSTRAINT `hidden_gems_operation_id_fkey` FOREIGN KEY (`operation_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE `hidden_gems` ADD CONSTRAINT `hidden_gems_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE `hidden_gems` ADD CONSTRAINT `hidden_gems_category_id_fkey` FOREIGN KEY (`category_id`) REFERENCES `hidden_gems_categories`(`category_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;

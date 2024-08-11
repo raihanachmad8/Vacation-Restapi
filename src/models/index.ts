@@ -5,3 +5,6 @@ export * from './user';
 export * from './comment.model';
 export * from './replies.model';
 export * from './tokens';
+export * from './hidden-gems.model';
+export * from './hidden-gems-comment.model';
+export * from './hidden-gems-comment-replies.model';

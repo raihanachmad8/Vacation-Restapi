@@ -22,8 +22,12 @@ import { HiddenGemsService } from './hidden-gems.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Public } from '@src/common/decorators';
 import { hiddenGemsFilter } from './types';
-import { WebResponse } from '@src/models';
-import { HiddenGemsModel } from '@src/models/hidden-gems.model';
+import {
+  WebResponse,
+  HiddenGemsModel,
+  HiddenGemsCommentModel,
+  HiddenGemsCommentRepliesModel,
+} from '@src/models';
 
 @Controller('hidden-gems')
 export class HiddenGemsController {
@@ -31,8 +35,8 @@ export class HiddenGemsController {
 
   @Public()
   @Get('categories')
-  async getCategories() {
-    return this.hiddenGemsService.getCategories();
+  async getCategories(@Query('search') search?: string) {
+    return this.hiddenGemsService.getCategories(search);
   }
 
   @Post()
@@ -89,7 +93,6 @@ export class HiddenGemsController {
     @Param('id') id: string,
     @CurrentUser() user?: User,
   ): Promise<WebResponse<HiddenGemsModel>> {
-    console.log('id', id, user);
     const response = await this.hiddenGemsService.getHiddenGemsById(id, user);
 
     return new WebResponse<HiddenGemsModel>({
@@ -227,6 +230,87 @@ export class HiddenGemsController {
     return new WebResponse<HiddenGemsModel>({
       data: response,
       message: 'Hidden gems changed to pending successfully',
+      statusCode: HttpStatus.OK,
+    });
+  }
+
+  @Patch(':id/comment')
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  @HttpCode(HttpStatus.OK)
+  async commentHiddenGems(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() request: { comment: string; rating: number },
+  ): Promise<WebResponse<HiddenGemsCommentModel>> {
+    const ConvertRequest = {
+      ...request,
+      user_id: user.user_id,
+      rating: Number(request.rating),
+      hidden_gems_id: id,
+    };
+    const response =
+      await this.hiddenGemsService.commentHiddenGems(ConvertRequest);
+
+    return new WebResponse<HiddenGemsCommentModel>({
+      data: response,
+      message: 'Comment added successfully',
+      statusCode: HttpStatus.OK,
+    });
+  }
+
+  @Patch(':id/comment/:comment_id/reply')
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  @HttpCode(HttpStatus.OK)
+  async replyCommentHiddenGems(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+    @Body() request: { comment: string; rating: number },
+  ): Promise<WebResponse<HiddenGemsCommentRepliesModel>> {
+    const ConvertRequest = {
+      ...request,
+      user_id: user.user_id,
+      hidden_gems_id: id,
+      rating: Number(request.rating),
+      comment_id: comment_id,
+    };
+    const response =
+      await this.hiddenGemsService.replyCommentHiddenGems(ConvertRequest);
+
+    return new WebResponse<HiddenGemsCommentRepliesModel>({
+      data: response,
+      message: 'Reply added successfully',
+      statusCode: HttpStatus.OK,
+    });
+  }
+
+  @Patch(':id/comment/:comment_id/reply/:reply_id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  @HttpCode(HttpStatus.OK)
+  async replyReplyCommentHiddenGems(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Param('comment_id') comment_id: string,
+    @Param('reply_id') reply_id: string,
+    @Body() request: { comment: string; rating: number },
+  ): Promise<WebResponse<HiddenGemsCommentRepliesModel>> {
+    const ConvertRequest = {
+      ...request,
+      user_id: user.user_id,
+      hidden_gems_id: id,
+      comment_id: comment_id,
+      rating: Number(request.rating),
+      parent_id: reply_id,
+    };
+    const response =
+      await this.hiddenGemsService.replyReplyCommentHiddenGems(ConvertRequest);
+
+    return new WebResponse<HiddenGemsCommentRepliesModel>({
+      data: response,
+      message: 'Reply added successfully',
       statusCode: HttpStatus.OK,
     });
   }

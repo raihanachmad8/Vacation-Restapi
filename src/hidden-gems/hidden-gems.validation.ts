@@ -1,5 +1,9 @@
 import { z, ZodType } from 'zod';
-import { CreateHiddenGemsRequest } from './dto';
+import {
+  CommentRequest,
+  CreateHiddenGemsRequest,
+  HiddenGemsCommentRepliesRequest,
+} from './dto';
 import { hiddenGemsFilter } from './types';
 import { UpdateHiddenGemsRequest } from './dto/update.dto';
 
@@ -39,7 +43,7 @@ export class HiddenGemsValidation {
       price_start: z.number().int().min(0),
       price_end: z.number().int().min(0),
       location: z.string().min(3),
-      rating: z.number().int().min(0),
+      rating: z.number().int().min(0).max(5),
       category_id: z.string().uuid(), // Category ID should be a string UUID
       operation_days: z
         .array(OperationDaySchema)
@@ -89,7 +93,7 @@ export class HiddenGemsValidation {
     price_start: z.number().int().min(0).optional(),
     price_end: z.number().int().min(0).optional(),
     location: z.string().min(3).optional(),
-    rating: z.number().int().min(0).optional(),
+    rating: z.number().int().min(0).max(5).optional(),
     category_id: z.string().uuid().optional(),
     operation_days: z
       .array(OperationDaySchema)
@@ -113,4 +117,21 @@ export class HiddenGemsValidation {
     description: z.string().min(10).optional(),
     photos: z.array(MulterFileSchema).nonempty().optional(),
   }) as ZodType<Partial<UpdateHiddenGemsRequest>>;
+
+  static readonly HIDDEN_GEMS_COMMENT_REQUEST: ZodType<CommentRequest> =
+    z.object({
+      comment: z.string().min(3),
+      hidden_gems_id: z.string().uuid(),
+      rating: z.number().int().min(0).max(5),
+      user_id: z.string().uuid(),
+    }) as ZodType<CommentRequest>;
+
+  static readonly HIDDEN_GEMS_COMMENT_REPLIES_REQUEST: ZodType<HiddenGemsCommentRepliesRequest> =
+    z.object({
+      comment_id: z.string().uuid(),
+      parent_id: z.string().uuid().optional(),
+      comment: z.string().min(3),
+      rating: z.number().int().min(0).max(5),
+      user_id: z.string().uuid(),
+    }) as ZodType<HiddenGemsCommentRepliesRequest>;
 }

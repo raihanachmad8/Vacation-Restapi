@@ -12,14 +12,20 @@ import {
 } from '@src/common/utils';
 import { FileStorageOptions } from '@src/file-storage/types';
 import { PrismaService } from '@src/prisma/prisma.service';
-import { CreateHiddenGemsRequest } from './dto';
 import { ValidationService } from '@src/common/validation.service';
 import { HiddenGemsValidation } from './hidden-gems.validation';
 import { DayOfWeek, FileVisibility, Role, Status, User } from '@prisma/client';
 import { HiddenGemsModel } from '@src/models/hidden-gems.model';
 import { hiddenGemsFilter } from './types';
-import { Paging } from '@src/models';
-import { UpdateHiddenGemsRequest } from './dto/update.dto';
+import { HiddenGemsCommentRepliesModel, Paging } from '@src/models';
+import {
+  CommentRequest,
+  CreateHiddenGemsRequest,
+  HiddenGemsCommentRepliesRequest,
+  UpdateHiddenGemsRequest,
+} from './dto';
+import { HiddenGemsCategories } from 'prisma/seeder/hidden-gems-category';
+import { HiddenGemsCommentModel } from '@src/models/hidden-gems-comment.model';
 
 @Injectable()
 export class HiddenGemsService {
@@ -31,16 +37,29 @@ export class HiddenGemsService {
     private readonly validationService: ValidationService,
   ) {}
 
-  async getCategories() {
+  async getCategories(search?): Promise<HiddenGemsCategories[]> {
     try {
-      const categories = await this.prismaService.hiddenGemsCategory.findMany();
+      const where = search
+        ? {
+            category_name: {
+              contains: search,
+            },
+          }
+        : {};
+
+      const categories = await this.prismaService.hiddenGemsCategory.findMany({
+        where,
+      });
+
       return categories;
     } catch (error) {
       throw new InternalServerErrorException('Failed to fetch categories');
     }
   }
 
-  async createHiddenGems(request: CreateHiddenGemsRequest) {
+  async createHiddenGems(
+    request: CreateHiddenGemsRequest,
+  ): Promise<HiddenGemsModel> {
     const validatedRequest = this.validationService.validate(
       HiddenGemsValidation.CREATE_HIDDEN_GEMS_REQUEST,
       request,
@@ -99,7 +118,11 @@ export class HiddenGemsService {
                 data: {
                   filename: photo.filename,
                   visibility: FileVisibility.PUBLIC,
-                  user_id: validatedRequest.user_id,
+                  User: {
+                    connect: {
+                      user_id: validatedRequest.user_id,
+                    },
+                  },
                   HiddenGems: {
                     connect: {
                       hidden_gem_id: hiddenGems.hidden_gem_id,
@@ -168,7 +191,6 @@ export class HiddenGemsService {
     const orderConfig = orderBy ? { [orderBy]: order } : undefined;
 
     let status: Status[] = [Status.APPROVE];
-
     if (user) {
       if (user.role === Role.ADMIN) {
         status = (stat as Status[]) || [
@@ -250,7 +272,10 @@ export class HiddenGemsService {
     }
   }
 
-  async getHiddenGemsById(hidden_gem_id: string, user: User) {
+  async getHiddenGemsById(
+    hidden_gem_id: string,
+    user: User,
+  ): Promise<HiddenGemsModel> {
     const hiddenGems = await this.prismaService.hiddenGems.findUnique({
       where: {
         hidden_gem_id,
@@ -258,6 +283,21 @@ export class HiddenGemsService {
       include: {
         Photos: true,
         User: true,
+        HiddenGemsComment: {
+          include: {
+            User: true,
+            HiddenGemsReply: {
+              include: {
+                User: true,
+                ChildReplies: {
+                  include: {
+                    User: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -275,15 +315,13 @@ export class HiddenGemsService {
     return HiddenGemsModel.toJson(hiddenGems);
   }
 
-  async updateHiddenGems(request: UpdateHiddenGemsRequest, user: User) {
+  async updateHiddenGems(
+    request: UpdateHiddenGemsRequest,
+    user: User,
+  ): Promise<HiddenGemsModel> {
     const hiddenGems = await this.prismaService.hiddenGems.findUnique({
-      where: {
-        hidden_gem_id: request.hidden_gems_id,
-      },
-      include: {
-        Photos: true,
-        User: true,
-      },
+      where: { hidden_gem_id: request.hidden_gems_id },
+      include: { Photos: true, User: true },
     });
 
     if (!hiddenGems) {
@@ -299,21 +337,17 @@ export class HiddenGemsService {
       request,
     );
 
+    // Get existing photos
     const oldPhotos = await this.prismaService.file.findMany({
       where: {
-        HiddenGems: {
-          some: {
-            hidden_gem_id: request.hidden_gems_id,
-          },
-        },
-        filename: {
-          in: hiddenGems.Photos.map((photo) => photo.filename),
-        },
+        HiddenGems: { some: { hidden_gem_id: request.hidden_gems_id } },
+        filename: { in: hiddenGems.Photos.map((photo) => photo.filename) },
       },
     });
 
-    // Determine new and delete photos
     const oldPhotoFilenames = oldPhotos.map((photo) => photo.filename);
+
+    // Determine new and delete photos
     const newPhotos = validatedRequest.photos.filter(
       (photo) => !oldPhotoFilenames.includes(photo.originalname),
     );
@@ -328,24 +362,20 @@ export class HiddenGemsService {
       const transaction = await this.prismaService.$transaction(
         async (prisma) => {
           // Update hidden gems
-
           let hiddenGemsStatus = hiddenGems.status;
 
           switch (hiddenGemsStatus) {
             case Status.REJECT:
-              hiddenGemsStatus = Status.PENDING;
-              break;
-            case 'REVISION':
+            case Status.REVISION:
               hiddenGemsStatus = Status.PENDING;
               break;
             default:
               hiddenGemsStatus = hiddenGems.status;
               break;
           }
+
           const updatedHiddenGems = await prisma.hiddenGems.update({
-            where: {
-              hidden_gem_id: request.hidden_gems_id,
-            },
+            where: { hidden_gem_id: request.hidden_gems_id },
             data: {
               title: validatedRequest.title,
               price_start: validatedRequest.price_start,
@@ -370,51 +400,53 @@ export class HiddenGemsService {
           // Handle new photos
           await Promise.all(
             newPhotos.map(async (photo) => {
-              photo.filename = await generateRandomFileName(photo);
-              await uploadFile(
+              const newFilename = await uploadFile(
                 photo,
                 this.hiddenGemsStorageConfig,
-                photo.filename,
               );
               await prisma.file.create({
                 data: {
-                  filename: photo.filename,
+                  filename: newFilename,
                   visibility: FileVisibility.PUBLIC,
                   HiddenGems: {
-                    connect: {
-                      hidden_gem_id: updatedHiddenGems.hidden_gem_id,
-                    },
+                    connect: { hidden_gem_id: updatedHiddenGems.hidden_gem_id },
                   },
-                  User: {
-                    connect: {
-                      user_id: user.user_id,
+                  User: { connect: { user_id: user.user_id } },
+                },
+              });
+              await prisma.file.deleteMany({
+                where: {
+                  filename: {
+                    in: deletePhotos.map((photo) => photo.filename),
+                  },
+                  HiddenGems: {
+                    some: {
+                      hidden_gem_id: request.hidden_gems_id,
                     },
                   },
                 },
               });
+              deletePhotos.map(async (photo) => {
+                await deleteFile(photo.filename, this.hiddenGemsStorageConfig);
+              });
             }),
           );
-          return updatedHiddenGems;
-        },
-      );
-      await Promise.all(
-        deletePhotos.map(async (photo) => {
-          await deleteFile(photo.filename, this.hiddenGemsStorageConfig);
-          await this.prismaService.file.deleteMany({
-            where: {
-              filename: photo.filename,
-              HiddenGems: {
-                some: {
-                  hidden_gem_id: request.hidden_gems_id,
-                },
-              },
+
+          return await prisma.hiddenGems.findUnique({
+            where: { hidden_gem_id: request.hidden_gems_id },
+            include: {
+              HiddenGemsCategory: true,
+              OperatingDaysAndHours: true,
+              User: true,
+              Photos: true,
             },
           });
-        }),
+        },
       );
 
       return HiddenGemsModel.toJson(transaction);
     } catch (error) {
+      // Handle error and rollback if necessary
       await Promise.all(
         newPhotos.map(async (photo) => {
           await deleteFile(photo.filename, this.hiddenGemsStorageConfig);
@@ -487,7 +519,11 @@ export class HiddenGemsService {
     }
   }
 
-  async changeStatus(hidden_gem_id: string, status: Status, user: User) {
+  async changeStatus(
+    hidden_gem_id: string,
+    status: Status,
+    user: User,
+  ): Promise<HiddenGemsModel> {
     const hiddenGems = await this.prismaService.hiddenGems.findUnique({
       where: {
         hidden_gem_id,
@@ -532,6 +568,188 @@ export class HiddenGemsService {
       throw new InternalServerErrorException(
         `Error updating article: ${error.message}`,
       );
+    }
+  }
+
+  async commentHiddenGems(
+    request: CommentRequest,
+  ): Promise<HiddenGemsCommentModel> {
+    const validatedRequest = this.validationService.validate(
+      HiddenGemsValidation.HIDDEN_GEMS_COMMENT_REQUEST,
+      request,
+    );
+
+    const hiddenGems = await this.prismaService.hiddenGems.findUnique({
+      where: {
+        hidden_gem_id: validatedRequest.hidden_gems_id,
+      },
+    });
+
+    if (!hiddenGems) {
+      throw new NotFoundException('Hidden gems not found');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        user_id: validatedRequest.user_id,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      const transaction = await this.prismaService.$transaction(
+        async (prisma) => {
+          const comment = await prisma.hiddenGemsComment.create({
+            data: {
+              comment: validatedRequest.comment,
+              rating: validatedRequest.rating,
+              User: {
+                connect: {
+                  user_id: validatedRequest.user_id,
+                },
+              },
+              HiddenGems: {
+                connect: {
+                  hidden_gem_id: validatedRequest.hidden_gems_id,
+                },
+              },
+            },
+          });
+
+          return comment;
+        },
+      );
+
+      return HiddenGemsCommentModel.toJson(transaction);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to comment hidden gems');
+    }
+  }
+
+  async replyCommentHiddenGems(
+    request: HiddenGemsCommentRepliesRequest,
+  ): Promise<HiddenGemsCommentRepliesModel> {
+    const validatedRequest = this.validationService.validate(
+      HiddenGemsValidation.HIDDEN_GEMS_COMMENT_REPLIES_REQUEST,
+      request,
+    );
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        user_id: validatedRequest.user_id,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const comment = await this.prismaService.hiddenGemsComment.findUnique({
+      where: {
+        comment_id: validatedRequest.comment_id,
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    try {
+      const transaction = await this.prismaService.$transaction(
+        async (prisma) => {
+          const replies = await prisma.hiddenGemsReply.create({
+            data: {
+              comment: validatedRequest.comment,
+              rating: validatedRequest.rating,
+              User: {
+                connect: {
+                  user_id: validatedRequest.user_id,
+                },
+              },
+              HiddenGemsComment: {
+                connect: {
+                  comment_id: validatedRequest.comment_id,
+                },
+              },
+            },
+            include: {
+              User: true,
+            },
+          });
+          return replies;
+        },
+      );
+
+      return HiddenGemsCommentRepliesModel.toJson(transaction);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to reply comment');
+    }
+  }
+
+  async replyReplyCommentHiddenGems(
+    request: HiddenGemsCommentRepliesRequest,
+  ): Promise<HiddenGemsCommentRepliesModel> {
+    const validatedRequest = this.validationService.validate(
+      HiddenGemsValidation.HIDDEN_GEMS_COMMENT_REPLIES_REQUEST,
+      request,
+    );
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        user_id: validatedRequest.user_id,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const reply = await this.prismaService.hiddenGemsReply.findUnique({
+      where: {
+        reply_id: validatedRequest.parent_id,
+      },
+    });
+
+    if (!reply) {
+      throw new NotFoundException('Reply not found');
+    }
+
+    try {
+      const transaction = await this.prismaService.$transaction(
+        async (prisma) => {
+          const replies = await prisma.hiddenGemsReply.create({
+            data: {
+              comment: validatedRequest.comment,
+              rating: validatedRequest.rating,
+              ParentReply: {
+                connect: {
+                  reply_id: validatedRequest.parent_id,
+                },
+              },
+              User: {
+                connect: {
+                  user_id: validatedRequest.user_id,
+                },
+              },
+              HiddenGemsComment: {
+                connect: {
+                  comment_id: reply.comment_id,
+                },
+              },
+            },
+            include: {
+              User: true,
+            },
+          });
+          return replies;
+        },
+      );
+      return await HiddenGemsCommentRepliesModel.toJson(transaction);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to reply reply comment');
     }
   }
 }

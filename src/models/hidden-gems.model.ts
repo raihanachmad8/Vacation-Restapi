@@ -1,9 +1,9 @@
 import { generateFileUrl, hiddenGemsStorageConfig } from '@src/common/utils';
 import { OperationDay } from '@src/hidden-gems/types';
 import { UserModel } from './user';
+import { HiddenGemsCommentModel } from './hidden-gems-comment.model';
 
 export class HiddenGemsModel {
-  //   updated_at
   hidden_gem_id: string;
   title: string;
   price_start: number;
@@ -16,6 +16,7 @@ export class HiddenGemsModel {
   photos: string[];
   user: UserModel;
   operation_days: OperationDay[];
+  comment: HiddenGemsCommentModel[];
   created_at: Date;
   updated_at: Date;
 
@@ -36,6 +37,12 @@ export class HiddenGemsModel {
       (hiddenGems.photos = await Promise.all(
         partial.Photos.map((photo: any) =>
           generateFileUrl(photo.filename, hiddenGemsStorageConfig),
+        ),
+      ));
+    partial.HiddenGemsComment &&
+      (hiddenGems.comment = await Promise.all(
+        partial.HiddenGemsComment.map((comment: any) =>
+          HiddenGemsCommentModel.toJson(comment),
         ),
       ));
     partial.OperatingDaysAndHours &&

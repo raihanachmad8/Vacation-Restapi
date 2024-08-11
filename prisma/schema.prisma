@@ -34,6 +34,8 @@ model User {
   ArticleCommentReply     ArticleCommentReply[]
   ArticleCommentReplyLike ArticleCommentReplyLike[]
   HiddenGems              HiddenGems[]
+  HiddenGemsComment       HiddenGemsComment[]
+  HiddenGemsReply         HiddenGemsReply[]
 
   @@map("users")
 }
@@ -98,7 +100,6 @@ model File {
   updated_at              DateTime       @updatedAt
   User                    User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   Article                 Article[]
-  hiddenGemsHidden_gem_id String?        @db.Char(36)
   HiddenGems              HiddenGems[]   @relation("HiddenGemsFiles")
 
   @@map("files")
@@ -207,7 +208,7 @@ model HiddenGemsCategory {
 
 model HiddenGems {
   hidden_gem_id String   @id @default(uuid()) @db.Char(36)
-  operation_id  String   @db.Char(36)
+  user_id       String   @db.Char(36)
   title         String   @db.VarChar(255)
   price_start   Int      @db.Int
   price_end     Int      @db.Int
@@ -219,10 +220,11 @@ model HiddenGems {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  User                  User                    @relation(fields: [operation_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  User                  User                    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   HiddenGemsCategory    HiddenGemsCategory      @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
   Photos                File[]                  @relation("HiddenGemsFiles")
-  OperatingDaysAndHours OperatingDaysAndHours[]
+  OperatingDaysAndHours OperatingDaysAndHours[] 
+  HiddenGemsComment     HiddenGemsComment[]
 
   @@map("hidden_gems")
 }
@@ -250,4 +252,38 @@ model OperatingDaysAndHours {
 
   @@unique([hidden_gem_id, day])
   @@map("operating_days_and_hours")
+}
+
+model HiddenGemsComment {
+  comment_id String   @id @default(uuid()) @db.Char(36)
+  hidden_gem_id String   @db.Char(36)
+  user_id    String   @db.Char(36)
+  rating     Float    @db.Float
+  comment    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  User        User        @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGems  HiddenGems  @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGemsReply HiddenGemsReply[]
+
+  @@map("hidden_gems_comments")
+}
+model HiddenGemsReply {
+  reply_id   String   @id @default(uuid()) @db.Char(36)
+  comment_id String   @db.Char(36)
+  parent_id  String?  @db.Char(36)
+  user_id    String   @db.Char(36)
+  rating     Float    @db.Float
+  comment     String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  User               User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGemsComment  HiddenGemsComment  @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  
+  ParentReply  HiddenGemsReply?  @relation("ReplyReplies", fields: [parent_id], references: [reply_id], onDelete: Cascade, onUpdate: NoAction)
+  ChildReplies HiddenGemsReply[] @relation("ReplyReplies")
+
+  @@map("hidden_gems_replies")
 }
