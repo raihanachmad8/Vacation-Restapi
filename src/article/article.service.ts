@@ -13,13 +13,13 @@ import {
   uploadFile,
 } from '@src/common/utils/file-storage';
 import { FileStorageOptions } from '@src/file-storage/types';
-import { Status, Role } from '@prisma/client';
+import { Status, Role, User } from '@prisma/client';
 import { articleStorageConfig } from '@src/common/utils';
 import { CommentRequest } from './dto';
-import { CommentModel } from '@src/models/comment.model';
-import { ReplyModel } from '@src/models/replies.model';
+import { CommentModel } from '@src/models/article-comment.model';
+import { ReplyModel } from '@src/models/article-comment-replies.model';
 import { ValidationService } from '@src/common/validation.service';
-import { ArticleValidation } from './artcile.validation';
+import { ArticleValidation } from './article.validation';
 import { CreateArticleRequest, UpdateArticleRequest } from './dto';
 
 @Injectable()
@@ -32,12 +32,12 @@ export class ArticleService {
     private validateService: ValidationService,
   ) {}
 
-  async create(request: CreateArticleRequest, file: Express.Multer.File) {
+  async create(request: CreateArticleRequest) {
     const CreateArticleRequest = this.validateService.validate(
       ArticleValidation.CREATE_ARTICLE_REQUEST,
       request,
     );
-    const { tags, user_id, ...articleData } = CreateArticleRequest;
+    const { tags, user_id, file, ...articleData } = CreateArticleRequest;
     const coverFileName = await generateRandomFileName(file);
 
     try {
@@ -104,75 +104,78 @@ export class ArticleService {
     }
   }
 
-  async search(query: articleFilter): Promise<{
+  async search(
+    query: articleFilter,
+    user?: User,
+  ): Promise<{
     paging: Paging;
     data: ArticleModel[];
   }> {
-    const { u, stat, s, limit, page, orderBy, order } = query;
-    const take = limit ? Math.min(parseInt(limit, 10), 25) : 10;
-    const skip = page ? (parseInt(page, 10) - 1) * take : 0;
-    const orderConfig = orderBy ? { [orderBy]: order || 'asc' } : undefined;
+    const validatedQuery = this.validateService.validate(
+      ArticleValidation.ARTICLE_FILTER,
+      query,
+    );
 
-    const statusValues: Status[] = stat
-      ? stat
-          .split(',')
-          .map((status) => status.trim().toUpperCase())
-          .filter((status): status is keyof typeof Status =>
-            Object.values(Status).includes(status as Status),
-          )
-          .map((status) => Status[status as keyof typeof Status])
-      : ['APPROVE'];
+    const {
+      u,
+      stat,
+      s,
+      limit = 10,
+      page = 1,
+      orderBy = 'updated_at',
+      order = 'desc',
+    } = validatedQuery;
+    const take = Math.min(limit, 25);
+    const skip = (page - 1) * take;
+    const orderConfig = orderBy ? { [orderBy]: order } : undefined;
+
+    let status: Status[] = [Status.APPROVE];
+    if (user) {
+      if (user.role === Role.ADMIN) {
+        status = (stat as Status[]) || [
+          Status.APPROVE,
+          Status.PENDING,
+          Status.REJECT,
+          Status.REVISION,
+        ];
+      } else {
+        if (u) {
+          const userBody = await this.prismaService.user.findUnique({
+            where: { user_id: u },
+          });
+
+          if (!userBody) {
+            throw new NotFoundException('User not found');
+          }
+
+          status =
+            userBody.user_id === user.user_id
+              ? (stat as Status[]) || [
+                  Status.APPROVE,
+                  Status.PENDING,
+                  Status.REJECT,
+                  Status.REVISION,
+                ]
+              : [Status.APPROVE];
+        } else {
+          status = [Status.APPROVE];
+        }
+      }
+    }
 
     const whereConditions = {
       ...(s && {
         OR: [{ title: { contains: s } }, { content: { contains: s } }],
       }),
-      ...(u && { user_id: u }),
-      ...(stat && {
-        status: {
-          in: statusValues,
-        },
-      }),
+      ...(u ? { User: { user_id: u } } : {}),
+      ...(status.length > 0 ? { status: { in: status } } : {}),
     };
-
-    const total = await this.prismaService.article.count({
-      where: whereConditions,
-    });
 
     const include = {
       User: true,
       Tag: true,
       Cover: true,
-    };
-
-    const articles = await this.prismaService.article.findMany({
-      where: whereConditions,
-      take,
-      skip,
-      orderBy: orderConfig,
-      include: include,
-    });
-
-    const paging: Paging = {
-      current_page: page ? parseInt(page, 10) : 1,
-      first_page: 1,
-      last_page: Math.ceil(total / take),
-      total,
-    };
-
-    return {
-      paging,
-      data: await Promise.all(
-        articles.map((article) => ArticleModel.toJson(article)),
-      ),
-    };
-  }
-
-  async find(article_id: string, user_id?: string): Promise<ArticleModel> {
-    const include = {
-      User: true,
-      Tag: true,
-      Cover: true,
+      ArticleLike: true,
       ArticleComment: {
         include: {
           User: true,
@@ -191,16 +194,72 @@ export class ArticleService {
           },
         },
       },
+      ArticleBookmark: true,
     };
 
-    if (user_id) {
-      include['ArticleLike'] = true;
-      include['ArticleBookmark'] = {
-        where: {
-          user_id,
+    const [articles, total] = await this.prismaService.$transaction([
+      this.prismaService.article.findMany({
+        where: whereConditions,
+        take,
+        skip,
+        orderBy: orderConfig,
+        include: include,
+      }),
+      this.prismaService.article.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    const paging: Paging = {
+      current_page: page || 1,
+      first_page: 1,
+      last_page: Math.ceil(total / take),
+      total,
+    };
+
+    const data = await Promise.all(
+      articles.map(async (article) => {
+        const {  ...articleData } = await ArticleModel.toJson(
+          article,
+          user?.user_id,
+        );
+        return articleData;
+      }),
+    );
+
+    return {
+      paging,
+      data,
+    };
+  }
+
+  async find(article_id: string, user?: User): Promise<ArticleModel> {
+    const include = {
+      User: true,
+      Tag: true,
+      Cover: true,
+      ArticleLike: true,
+      ArticleComment: {
+        include: {
+          User: true,
+          ArticleCommentLike: true,
+          ArticleCommentReply: {
+            include: {
+              User: true,
+              ArticleCommentReplyLike: true,
+              ChildReplies: {
+                include: {
+                  User: true,
+                  ArticleCommentReplyLike: true,
+                },
+              },
+            },
+          },
         },
-      };
-    }
+      },
+      ArticleBookmark: true,
+    };
+
     const article = await this.prismaService.article.findUnique({
       where: { article_id },
       include: include,
@@ -215,19 +274,16 @@ export class ArticleService {
       data: { count_view: article.count_view + 1 },
     });
 
-    return await ArticleModel.toJson(article, user_id);
+    return await ArticleModel.toJson(article, user?.user_id);
   }
 
-  async update(
-    article_id: string,
-    request: UpdateArticleRequest,
-    file?: Express.Multer.File,
-  ) {
+  async update(request: UpdateArticleRequest) {
     const UpdateArticleRequest = this.validateService.validate(
       ArticleValidation.ARTICLE_UPDATE_REQUEST,
       request,
     );
-    const { tags, user_id, ...articleData } = UpdateArticleRequest;
+    const { article_id, tags, user_id, file, ...articleData } =
+      UpdateArticleRequest;
     const article = await this.prismaService.article.findUnique({
       where: { article_id: article_id },
       include: { User: true, Cover: true, Tag: true },

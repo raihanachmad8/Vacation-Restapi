@@ -38,11 +38,7 @@ export class UserService {
     return await UserModel.toJson(user);
   }
 
-  async update(
-    user_id: string,
-    data: UpdateUserRequest,
-    file?: Express.Multer.File,
-  ): Promise<UserModel> {
+  async update(data: UpdateUserRequest): Promise<UserModel> {
     const UpdateUserRequest = this.validationService.validate(
       UserValidation.UPDATE_USER_REQUEST,
       data,
@@ -50,7 +46,7 @@ export class UserService {
 
     const user = await this.prismaService.user.findUnique({
       where: {
-        user_id,
+        user_id: UpdateUserRequest.user_id,
       },
     });
 
@@ -64,25 +60,45 @@ export class UserService {
         user.salt,
       );
     }
+    let profileImageName: string;
     try {
       const transaction = await this.prismaService.$transaction(
         async (prisma) => {
-          if (file && file.originalname !== user.profile) {
-            UpdateUserRequest.profile = await uploadFile(
-              file,
+          if (
+            UpdateUserRequest.profile &&
+            UpdateUserRequest.profile.originalname !== user.profile
+          ) {
+            profileImageName = await uploadFile(
+              UpdateUserRequest.profile,
               this.fileStorageOptions,
             );
           }
 
-          if (file && file.originalname !== user.profile) {
+          if (
+            UpdateUserRequest.profile &&
+            UpdateUserRequest.profile.originalname !== user.profile
+          ) {
             await deleteFile(user.profile, this.fileStorageOptions);
+          }
+
+          if (UpdateUserRequest.password) {
+            UpdateUserRequest.password = await this.hashPassword(
+              UpdateUserRequest.password,
+              user.salt,
+            );
           }
 
           return await prisma.user.update({
             where: {
               user_id: user.user_id,
             },
-            data: UpdateUserRequest,
+            data: {
+              fullname: UpdateUserRequest.fullname,
+              email: UpdateUserRequest.email,
+              username: UpdateUserRequest.username,
+              password: UpdateUserRequest.password,
+              profile: profileImageName || user.profile,
+            },
           });
         },
       );

@@ -128,6 +128,7 @@ export class HiddenGemsValidation {
 
   static readonly HIDDEN_GEMS_COMMENT_REPLIES_REQUEST: ZodType<HiddenGemsCommentRepliesRequest> =
     z.object({
+      hidden_gem_id: z.string().uuid(),
       comment_id: z.string().uuid(),
       parent_id: z.string().uuid().optional(),
       comment: z.string().min(3),

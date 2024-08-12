@@ -4,6 +4,6 @@ import { HiddenGemsService } from './hidden-gems.service';
 
 @Module({
   controllers: [HiddenGemsController],
-  providers: [HiddenGemsService]
+  providers: [HiddenGemsService],
 })
 export class HiddenGemsModule {}

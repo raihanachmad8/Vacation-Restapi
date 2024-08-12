@@ -24,7 +24,7 @@ import {
   HiddenGemsCommentRepliesRequest,
   UpdateHiddenGemsRequest,
 } from './dto';
-import { HiddenGemsCategories } from 'prisma/seeder/hidden-gems-category';
+import { HiddenGemsCategories } from 'prisma/seeder/hidden-gems-category.seed';
 import { HiddenGemsCommentModel } from '@src/models/hidden-gems-comment.model';
 
 @Injectable()
@@ -239,7 +239,11 @@ export class HiddenGemsService {
       ...(price_start ? { price_start: { gte: price_start } } : {}),
       ...(price_end ? { price_end: { lte: price_end } } : {}),
       ...(rating ? { rating: { gte: rating } } : {}),
-      ...(s ? { title: { contains: s } } : {}),
+      ...(s
+        ? {
+            OR: [{ title: { contains: s } }, { description: { contains: s } }],
+          }
+        : {}),
     };
 
     try {
@@ -261,7 +265,7 @@ export class HiddenGemsService {
       return {
         data: await Promise.all(data.map(HiddenGemsModel.toJson)),
         paging: {
-          current_page: page,
+          current_page: page || 1,
           first_page: 1,
           last_page: Math.ceil(count / take),
           total: count,

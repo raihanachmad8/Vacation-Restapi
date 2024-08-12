@@ -1,4 +1,4 @@
-import { ReplyModel } from './replies.model';
+import { ReplyModel } from './article-comment-replies.model';
 import { UserModel } from './user';
 
 export class CommentModel {

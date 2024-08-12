@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseFilePipeBuilder,
   Patch,
   Post,
   Query,
@@ -39,21 +38,15 @@ export class ArticleController {
   async create(
     @CurrentUser() user: User,
     @Body() request: CreateArticleRequest,
-    @UploadedFile(
-      new ParseFilePipeBuilder()
-        .addMaxSizeValidator({
-          maxSize: 5 * 1024 * 1024,
-          message: 'File size exceeds 5MB',
-        })
-        .addFileTypeValidator({
-          fileType: /(jpg|jpeg|png)/i,
-        })
-        .build(),
-    )
+    @UploadedFile()
     file: Express.Multer.File,
   ) {
-    request.user_id = user.user_id;
-    const article = await this.articleService.create(request, file);
+    const ConverRequest = {
+      ...request,
+      user_id: user.user_id,
+      file: file,
+    };
+    const article = await this.articleService.create(ConverRequest);
     return new WebResponse<any>({
       message: 'Article created successfully',
       statusCode: HttpStatus.CREATED,
@@ -66,8 +59,17 @@ export class ArticleController {
   @Public()
   async getArticles(
     @Query() query: articleFilter,
+    @CurrentUser() user?: User,
   ): Promise<WebResponse<ArticleModel[]>> {
-    const { data, paging } = await this.articleService.search(query);
+    const ConverRequest = {
+      ...query,
+      limit: query?.limit ? Number(query.limit) : undefined,
+      page: query?.page ? Number(query.page) : undefined,
+    };
+    const { data, paging } = await this.articleService.search(
+      ConverRequest,
+      user,
+    );
     return new WebResponse<ArticleModel[]>({
       message: 'Articles retrieved successfully',
       statusCode: HttpStatus.OK,
@@ -83,7 +85,7 @@ export class ArticleController {
     @Param('id') id: string,
     @CurrentUser() user?: User,
   ): Promise<WebResponse<any>> {
-    const article = await this.articleService.find(id, user?.user_id);
+    const article = await this.articleService.find(id, user);
     return new WebResponse<any>({
       message: 'Article retrieved successfully',
       statusCode: HttpStatus.OK,
@@ -100,21 +102,16 @@ export class ArticleController {
     @CurrentUser() user: User,
     @Param('id') id: string,
     @Body() request: UpdateArticleRequest,
-    @UploadedFile(
-      new ParseFilePipeBuilder()
-        .addMaxSizeValidator({
-          maxSize: 5 * 1024 * 1024,
-          message: 'File size exceeds 5MB',
-        })
-        .addFileTypeValidator({
-          fileType: /(jpg|jpeg|png)/i,
-        })
-        .build(),
-    )
-    cover: Express.Multer.File,
+    @UploadedFile()
+    file: Express.Multer.File,
   ): Promise<WebResponse<ArticleModel>> {
-    request.user_id = user.user_id;
-    const response = await this.articleService.update(id, request, cover);
+    const ConverRequest = {
+      ...request,
+      article_id: id,
+      user_id: user.user_id,
+      file: file,
+    };
+    const response = await this.articleService.update(ConverRequest);
     return new WebResponse<ArticleModel>({
       data: response,
       message: 'Article updated successfully',

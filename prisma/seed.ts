@@ -1,14 +1,18 @@
 import { PrismaClient } from '@prisma/client';
 import { UserSeeder } from './seeder/user.seed';
 import { ArticleSeeder } from './seeder/article.seed';
-import { ArticleCommentSeeder } from './seeder/article-comment';
+import { ArticleCommentSeeder } from './seeder/article-comment.seed';
 import { ArticleLikeSeeder } from './seeder/article-like.seed';
-import { ArticleCommentLikeSeeder } from './seeder/article-comment-like';
-import { ArticleCommentReplySeeder } from './seeder/article-comment-reply';
-import { ArticleCommentReplyReplySeeder } from './seeder/article-comment-reply-reply';
-import { ArticleCommentReplyLikeSeeder } from './seeder/article-comment-reply-like';
-import { ArticleBookmarkSeeder } from './seeder/article-bookmark';
-import { HiddenGemsCategories } from './seeder/hidden-gems-category';
+import { ArticleCommentLikeSeeder } from './seeder/article-comment-like.seed';
+import { ArticleCommentReplySeeder } from './seeder/article-comment-reply.seed';
+import { ArticleCommentReplyReplySeeder } from './seeder/article-comment-reply-reply.seed';
+import { ArticleCommentReplyLikeSeeder } from './seeder/article-comment-reply-like.seed';
+import { ArticleBookmarkSeeder } from './seeder/article-bookmark.seed';
+import { HiddenGemsCategories } from './seeder/hidden-gems-category.seed';
+import { HiddenGems } from './seeder/hidden-gems.seed';
+import { HiddenGemsComments } from './seeder/hidden-gems-comment.seed';
+import { HiddenGemsCommentsReplies } from './seeder/hidden-gems-comment-replies.seed';
+import { HiddenGemsCommentsRepliesReply } from './seeder/hidden-gems-comment-replies-reply.seed';
 const prisma = new PrismaClient();
 
 async function main() {
@@ -23,6 +27,10 @@ async function main() {
     await ArticleCommentReplyReplySeeder.seed(prisma),
     await ArticleCommentReplyLikeSeeder.seed(prisma),
     await HiddenGemsCategories.seed(prisma),
+    await HiddenGems.seed(prisma),
+    await HiddenGemsComments.seed(prisma),
+    await HiddenGemsCommentsReplies.seed(prisma),
+    await HiddenGemsCommentsRepliesReply.seed(prisma),
   ]);
 }
 

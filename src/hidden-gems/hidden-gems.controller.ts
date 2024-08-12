@@ -61,7 +61,7 @@ export class HiddenGemsController {
   }
 
   @Public()
-  @Get('search')
+  @Get()
   @HttpCode(HttpStatus.OK)
   async getHiddenGems(
     @Query() request: hiddenGemsFilter,

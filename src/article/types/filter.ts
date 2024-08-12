@@ -1,9 +1,9 @@
 export type articleFilter = {
   u?: string;
-  stat?: string;
+  stat?: string[];
   s?: string;
-  limit?: string;
-  page?: string;
+  limit?: number;
+  page?: number;
   orderBy?: string;
   order?: string;
 };
