@@ -1,4 +1,9 @@
-import { Status, FileVisibility, PrismaClient, Role } from '@prisma/client';
+import {
+  FileVisibility,
+  PrismaClient,
+  Role,
+  ArticleStatus,
+} from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import { ContractSeeder } from './contract/seed.interface';
 import {
@@ -24,10 +29,8 @@ export class ArticleSeeder extends ContractSeeder {
         title: faker.lorem.sentence(),
         content: faker.lorem.paragraphs(),
         status: faker.helpers.arrayElement([
-          Status.PENDING,
-          Status.APPROVE,
-          Status.REJECT,
-          Status.REVISION,
+          ArticleStatus.DRAFT,
+          ArticleStatus.PUBLISHED,
         ]),
         count_views: faker.number.int({ min: 0, max: 1000 }),
         count_likes: faker.number.int({ min: 0, max: 1000 }),

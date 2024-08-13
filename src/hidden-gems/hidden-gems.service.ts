@@ -182,15 +182,15 @@ export class HiddenGemsService {
       s,
       limit = 10,
       page = 1,
-      orderBy,
-      order = 'asc',
+      orderBy = 'updated_at',
+      order = 'desc',
     } = validatedQuery;
 
     const take = Math.min(limit, 25);
     const skip = (page - 1) * take;
     const orderConfig = orderBy ? { [orderBy]: order } : undefined;
 
-    let status: Status[] = [Status.APPROVE];
+    let status: Status[] = (stat as Status[]) || [Status.APPROVE];
     if (user) {
       if (user.role === Role.ADMIN) {
         status = (stat as Status[]) || [
@@ -217,16 +217,18 @@ export class HiddenGemsService {
                   Status.REJECT,
                   Status.REVISION,
                 ]
-              : [Status.APPROVE];
+              : status.filter((s) => s === Status.APPROVE);
         } else {
-          status = [Status.APPROVE];
+          status = status.filter((s) => s === Status.APPROVE);
         }
       }
+    } else {
+      status = status.filter((s) => s === Status.APPROVE);
     }
 
     const where = {
       ...(u ? { User: { user_id: u } } : {}),
-      ...(status.length > 0 ? { status: { in: status } } : {}),
+      ...(status ? { status: { in: status } } : {}),
       ...(stat_day
         ? {
             OperatingDaysAndHours: {
@@ -272,6 +274,7 @@ export class HiddenGemsService {
         },
       };
     } catch (error) {
+      console.log('error', error);
       throw new Error(`Failed to search hidden gems: ${error.message}`);
     }
   }

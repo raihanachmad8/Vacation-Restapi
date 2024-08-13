@@ -5,9 +5,6 @@
 
 */  
 
--- AlterTable
-ALTER TABLE `articles` ADD COLUMN `status` ENUM('Pending', 'Revision', 'Reject', 'Approve') NOT NULL DEFAULT 'Pending';
-
 -- CreateTable
 CREATE TABLE `_ArticleTag` (
     `A` CHAR(36) NOT NULL,

@@ -19,12 +19,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { articleFilter } from './types';
 import { ArticleModel, WebResponse } from '@src/models';
 import { CurrentUser } from '@src/common/decorators/current-user.decorator';
-import { Status, Role, User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import { Roles } from '@src/common/decorators/role.decorator';
 import { RolesGuard } from '@src/common/guards/roles.guard';
 import { Public } from '@src/common/decorators';
 import { CommentRequest } from './dto';
 import { CommentModel } from '@src/models';
+import { GetIp } from '@src/common/decorators/get-ip.decorator';
 
 @Controller('article')
 export class ArticleController {
@@ -83,9 +84,10 @@ export class ArticleController {
   @HttpCode(HttpStatus.OK)
   async getArticle(
     @Param('id') id: string,
+    @GetIp() ip: string,
     @CurrentUser() user?: User,
   ): Promise<WebResponse<any>> {
-    const article = await this.articleService.find(id, user);
+    const article = await this.articleService.find(id, ip, user);
     return new WebResponse<any>({
       message: 'Article retrieved successfully',
       statusCode: HttpStatus.OK,
@@ -130,66 +132,6 @@ export class ArticleController {
     await this.articleService.delete(id, user.user_id);
     return new WebResponse<any>({
       message: 'Article deleted successfully',
-      statusCode: HttpStatus.OK,
-    });
-  }
-
-  @Patch(':id/approve')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  async approveArticle(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<WebResponse<any>> {
-    await this.articleService.changeStatus(id, Status.APPROVE, user.user_id);
-    return new WebResponse<any>({
-      message: 'Article approved successfully',
-      statusCode: HttpStatus.OK,
-    });
-  }
-
-  @Patch(':id/revision')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  async revisionArticle(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<WebResponse<any>> {
-    await this.articleService.changeStatus(id, Status.REVISION, user.user_id);
-    return new WebResponse<any>({
-      message: 'Article changed to revision successfully',
-      statusCode: HttpStatus.OK,
-    });
-  }
-
-  @Patch(':id/reject')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  async rejectArticle(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<WebResponse<any>> {
-    await this.articleService.changeStatus(id, Status.REJECT, user.user_id);
-    return new WebResponse<any>({
-      message: 'Article rejected successfully',
-      statusCode: HttpStatus.OK,
-    });
-  }
-
-  @Patch(':id/pending')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  async pendingArticle(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-  ): Promise<WebResponse<any>> {
-    await this.articleService.changeStatus(id, Status.PENDING, user.user_id);
-    return new WebResponse<any>({
-      message: 'Article changed to pending successfully',
       statusCode: HttpStatus.OK,
     });
   }

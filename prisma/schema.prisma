@@ -71,7 +71,7 @@ model Article {
   content    String   @db.Text
   cover_id   String?  @db.Char(36)
   user_id    String   @db.Char(36)
-  status     Status   @default(PENDING)
+  status     ArticleStatus @default(DRAFT)
   count_view Int      @default(0)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -84,6 +84,11 @@ model Article {
   ArticleComment  ArticleComment[]
 
   @@map("articles")
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum FileVisibility {

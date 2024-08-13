@@ -1,5 +1,6 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -13,7 +14,7 @@ import {
   uploadFile,
 } from '@src/common/utils/file-storage';
 import { FileStorageOptions } from '@src/file-storage/types';
-import { Status, Role, User } from '@prisma/client';
+import { Status, Role, User, ArticleStatus } from '@prisma/client';
 import { articleStorageConfig } from '@src/common/utils';
 import { CommentRequest } from './dto';
 import { CommentModel } from '@src/models/article-comment.model';
@@ -21,6 +22,7 @@ import { ReplyModel } from '@src/models/article-comment-replies.model';
 import { ValidationService } from '@src/common/validation.service';
 import { ArticleValidation } from './article.validation';
 import { CreateArticleRequest, UpdateArticleRequest } from './dto';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class ArticleService {
@@ -30,6 +32,7 @@ export class ArticleService {
   constructor(
     private readonly prismaService: PrismaService,
     private validateService: ValidationService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async create(request: CreateArticleRequest) {
@@ -129,46 +132,38 @@ export class ArticleService {
     const skip = (page - 1) * take;
     const orderConfig = orderBy ? { [orderBy]: order } : undefined;
 
-    let status: Status[] = [Status.APPROVE];
-    if (user) {
-      if (user.role === Role.ADMIN) {
-        status = (stat as Status[]) || [
-          Status.APPROVE,
-          Status.PENDING,
-          Status.REJECT,
-          Status.REVISION,
-        ];
-      } else {
-        if (u) {
-          const userBody = await this.prismaService.user.findUnique({
-            where: { user_id: u },
-          });
+    let status: ArticleStatus[] = (stat as ArticleStatus[]) || [
+      ArticleStatus.PUBLISHED,
+    ];
 
-          if (!userBody) {
-            throw new NotFoundException('User not found');
-          }
+    if (user && u) {
+      const userBody = await this.prismaService.user.findUnique({
+        where: { user_id: u },
+      });
 
-          status =
-            userBody.user_id === user.user_id
-              ? (stat as Status[]) || [
-                  Status.APPROVE,
-                  Status.PENDING,
-                  Status.REJECT,
-                  Status.REVISION,
-                ]
-              : [Status.APPROVE];
-        } else {
-          status = [Status.APPROVE];
-        }
+      if (!userBody) {
+        throw new NotFoundException('User not found');
       }
+
+      status =
+        userBody.user_id === user.user_id
+          ? (stat as ArticleStatus[]) || [
+              ArticleStatus.DRAFT,
+              ArticleStatus.PUBLISHED,
+            ]
+          : [ArticleStatus.PUBLISHED];
+    } else {
+      status = status.filter((s) => s === ArticleStatus.PUBLISHED);
     }
+
+    console.log('status:', status);
 
     const whereConditions = {
       ...(s && {
         OR: [{ title: { contains: s } }, { content: { contains: s } }],
       }),
       ...(u ? { User: { user_id: u } } : {}),
-      ...(status.length > 0 ? { status: { in: status } } : {}),
+      ...(status ? { status: { in: status } } : {}),
     };
 
     const include = {
@@ -219,7 +214,7 @@ export class ArticleService {
 
     const data = await Promise.all(
       articles.map(async (article) => {
-        const {  ...articleData } = await ArticleModel.toJson(
+        const { comment, ...articleData } = await ArticleModel.toJson(
           article,
           user?.user_id,
         );
@@ -233,7 +228,11 @@ export class ArticleService {
     };
   }
 
-  async find(article_id: string, user?: User): Promise<ArticleModel> {
+  async find(
+    article_id: string,
+    ip: string,
+    user?: User,
+  ): Promise<ArticleModel> {
     const include = {
       User: true,
       Tag: true,
@@ -269,10 +268,18 @@ export class ArticleService {
       throw new NotFoundException('Article not found');
     }
 
-    await this.prismaService.article.update({
-      where: { article_id },
-      data: { count_view: article.count_view + 1 },
-    });
+    const getCachedArticle = await this.cacheManager.get(
+      `article:${article_id}-${ip}`,
+    );
+
+    if (!getCachedArticle) {
+      await this.prismaService.article.update({
+        where: { article_id },
+        data: { count_view: article.count_view + 1 },
+      });
+
+      await this.cacheManager.set(`article:${article_id}-${ip}`, 'viewed');
+    }
 
     return await ArticleModel.toJson(article, user?.user_id);
   }
@@ -332,25 +339,10 @@ export class ArticleService {
               })
             : null;
 
-          let articleStatus = article.status;
-
-          switch (articleStatus) {
-            case Status.REJECT:
-              articleStatus = Status.PENDING;
-              break;
-            case 'REVISION':
-              articleStatus = Status.PENDING;
-              break;
-            default:
-              articleStatus = article.status;
-              break;
-          }
-
           const updatedArticle = await prisma.article.update({
             where: { article_id: article_id },
             data: {
               ...articleData,
-              status: articleStatus,
               User: { connect: { user_id } },
               Tag: {
                 connect: tagsToConnect.map((tag) => ({ tag_name: tag })),
@@ -424,47 +416,6 @@ export class ArticleService {
       console.error(`Error in delete operation: ${error.message}`);
       throw new InternalServerErrorException(
         `Error deleting article: ${error.message}`,
-      );
-    }
-  }
-
-  async changeStatus(id: string, status: Status, user_id: string) {
-    const article = await this.prismaService.article.findUnique({
-      where: { article_id: id },
-      include: { User: true, Tag: true, Cover: true },
-    });
-
-    if (!article) {
-      throw new NotFoundException('Article not found');
-    }
-
-    const user = await this.prismaService.user.findUnique({
-      where: { user_id },
-    });
-
-    if (user.role !== Role.ADMIN) {
-      throw new ForbiddenException(
-        'You are not authorized to update this article',
-      );
-    }
-
-    try {
-      const transaction = await this.prismaService.$transaction(
-        async (prisma) => {
-          const updatedArticle = await prisma.article.update({
-            where: { article_id: id },
-            data: { status },
-            include: { User: true, Tag: true, Cover: true },
-          });
-
-          return updatedArticle;
-        },
-      );
-
-      return await ArticleModel.toJson(transaction);
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error updating article: ${error.message}`,
       );
     }
   }

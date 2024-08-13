@@ -22,15 +22,14 @@ export class ArticleValidation {
       content: z.string().min(10),
       tags: z.array(z.string().min(3)).optional(),
       user_id: z.string().uuid(),
+      status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
       file: MulterFileSchema,
     }) as ZodType<CreateArticleRequest>;
 
   static readonly ARTICLE_FILTER: ZodType<articleFilter> = z.object({
     u: z.string().uuid().optional(),
-    stat: z
-      .array(z.enum(['APPROVE', 'PENDING', 'REJECT', 'REVISION']))
-      .optional(),
-    // s: z.string().optional(),
+    stat: z.array(z.enum(['DRAFT', 'PUBLISHED'])).optional(),
+    s: z.string().optional(),
     limit: z.number().int().optional(),
     page: z.number().int().optional(),
     orderBy: z.string().optional(),
@@ -44,6 +43,7 @@ export class ArticleValidation {
       content: z.string().min(10).optional(),
       tags: z.array(z.string().min(3)).optional(),
       user_id: z.string().uuid(),
+      status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
       file: MulterFileSchema.optional(),
     }) as ZodType<UpdateArticleRequest>;
 
