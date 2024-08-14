@@ -28,24 +28,7 @@ export class EventValidation {
     location: z.string().min(3),
     rating: z.number().int().min(0).max(5),
     category_id: z.string().uuid(),
-    operation_days: z
-      .array(OperationDaySchema)
-      .nonempty()
-      .refine(
-        (days) => {
-          const seenDays = new Set<string>();
-          for (const day of days) {
-            if (seenDays.has(day.day)) {
-              return false;
-            }
-            seenDays.add(day.day);
-          }
-          return true;
-        },
-        {
-          message: 'Day in operation days must be unique',
-        },
-      ),
+    operation_days: z.array(OperationDaySchema).nonempty(),
     description: z.string().min(10),
     photos: z.array(MulterFileSchema).nonempty(),
     user_id: z.string().uuid(),
@@ -76,25 +59,7 @@ export class EventValidation {
       location: z.string().min(3).optional(),
       rating: z.number().int().min(0).max(5).optional(),
       category_id: z.string().uuid().optional(),
-      operation_days: z
-        .array(OperationDaySchema)
-        .nonempty()
-        .refine(
-          (days) => {
-            const seenDays = new Set<string>();
-            for (const day of days) {
-              if (seenDays.has(day.day)) {
-                return false;
-              }
-              seenDays.add(day.day);
-            }
-            return true;
-          },
-          {
-            message: 'Day in operation days must be unique',
-          },
-        )
-        .optional(),
+      operation_days: z.array(OperationDaySchema).nonempty().optional(),
       description: z.string().min(10).optional(),
       photos: z.array(MulterFileSchema).nonempty().optional(),
     }) as ZodType<Partial<UpdateEventRequest>>;
