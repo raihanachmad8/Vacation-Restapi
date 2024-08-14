@@ -8,3 +8,4 @@ export * from './tokens';
 export * from './hidden-gems.model';
 export * from './hidden-gems-comment.model';
 export * from './hidden-gems-comment-replies.model';
+export * from './event.model';

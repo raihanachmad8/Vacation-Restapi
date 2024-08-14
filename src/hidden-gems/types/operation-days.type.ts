@@ -7,6 +7,6 @@ export type OperationDay = {
     | 'FRIDAY'
     | 'SATURDAY'
     | 'SUNDAY';
-  open_time: string; // Assuming HH:mm format
-  close_time: string; // Assuming HH:mm format
+  open_time: string;
+  close_time: string;
 };

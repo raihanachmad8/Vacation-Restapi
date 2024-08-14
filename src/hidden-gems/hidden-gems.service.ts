@@ -290,6 +290,7 @@ export class HiddenGemsService {
       include: {
         Photos: true,
         User: true,
+        HiddenGemsCategory: true,
         HiddenGemsComment: {
           include: {
             User: true,
@@ -573,7 +574,7 @@ export class HiddenGemsService {
       return await HiddenGemsModel.toJson(transaction);
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error updating article: ${error.message}`,
+        `Error updating hidden gems status: ${error.message}`,
       );
     }
   }

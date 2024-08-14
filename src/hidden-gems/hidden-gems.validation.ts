@@ -19,8 +19,8 @@ const DayOfWeek = z.enum([
 
 const OperationDaySchema = z.object({
   day: DayOfWeek,
-  open_time: z.string().length(5),
-  close_time: z.string().length(5),
+  open_time: z.string().datetime(),
+  close_time: z.string().datetime(),
 });
 
 const MulterFileSchema = z.object({

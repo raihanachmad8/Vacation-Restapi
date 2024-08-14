@@ -14,7 +14,7 @@ import {
   uploadFile,
 } from '@src/common/utils/file-storage';
 import { FileStorageOptions } from '@src/file-storage/types';
-import { Status, Role, User, ArticleStatus } from '@prisma/client';
+import { User, ArticleStatus } from '@prisma/client';
 import { articleStorageConfig } from '@src/common/utils';
 import { CommentRequest } from './dto';
 import { CommentModel } from '@src/models/article-comment.model';
@@ -34,6 +34,22 @@ export class ArticleService {
     private validateService: ValidationService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async getTags(search?: string): Promise<string[]> {
+    const where = search
+      ? {
+          tag_name: {
+            contains: search,
+          },
+        }
+      : {};
+    const tags = await this.prismaService.tag.findMany({
+      where: where,
+      select: { tag_name: true },
+    });
+
+    return tags.map((tag) => tag.tag_name);
+  }
 
   async create(request: CreateArticleRequest) {
     const CreateArticleRequest = this.validateService.validate(
@@ -532,6 +548,8 @@ export class ArticleService {
         User: true,
         Tag: true,
         Cover: true,
+        ArticleLike: true,
+        ArticleBookmark: true,
       },
     });
 
@@ -540,7 +558,7 @@ export class ArticleService {
     }
 
     return await Promise.all(
-      article.map((article) => ArticleModel.toJson(article)),
+      article.map((article) => ArticleModel.toJson(article, user_id)),
     );
   }
 

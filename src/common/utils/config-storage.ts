@@ -20,3 +20,8 @@ export const globalFileStorageConfig: FileStorageOptions = {
   visibility: FileVisibility.PUBLIC,
   storageFolder: 'file-storage',
 };
+
+export const eventStorageConfig: FileStorageOptions = {
+  visibility: FileVisibility.PUBLIC,
+  storageFolder: 'events',
+};

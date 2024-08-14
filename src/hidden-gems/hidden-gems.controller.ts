@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { CurrentUser } from '@src/common/decorators/current-user.decorator';
-import { CreateHiddenGemsRequest } from './dto';
+import { CreateHiddenGemsRequest, UpdateHiddenGemsRequest } from './dto';
 import { RolesGuard } from '@src/common/guards/roles.guard';
 import { Roles } from '@src/common/decorators/role.decorator';
 import { HiddenGemsService } from './hidden-gems.service';
@@ -110,7 +110,7 @@ export class HiddenGemsController {
   async updateHiddenGems(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() request: Partial<CreateHiddenGemsRequest>,
+    @Body() request: Partial<UpdateHiddenGemsRequest>,
     @UploadedFiles() photos: Express.Multer.File[],
   ): Promise<WebResponse<HiddenGemsModel>> {
     const ConvertRequest = {

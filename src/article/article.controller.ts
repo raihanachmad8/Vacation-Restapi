@@ -31,6 +31,18 @@ import { GetIp } from '@src/common/decorators/get-ip.decorator';
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
+  @Get('tags')
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  async getTags(@Query('s') search?: string): Promise<WebResponse<string[]>> {
+    const tags = await this.articleService.getTags(search);
+    return new WebResponse<string[]>({
+      message: 'Tags retrieved successfully',
+      statusCode: HttpStatus.OK,
+      data: tags,
+    });
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('cover'))

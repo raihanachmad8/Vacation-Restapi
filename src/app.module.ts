@@ -7,11 +7,11 @@ import { ArticleModule } from './article/article.module';
 import { FileStorageModule } from './file-storage/file-storage.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards';
-import { TagModule } from './tag/tag.module';
 import { UserService } from './user/user.service';
 import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
 import { HiddenGemsModule } from './hidden-gems/hidden-gems.module';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -23,9 +23,9 @@ import { HiddenGemsModule } from './hidden-gems/hidden-gems.module';
     PrismaModule,
     ArticleModule,
     FileStorageModule,
-    TagModule,
     UserModule,
     HiddenGemsModule,
+    EventModule,
   ],
   providers: [
     {

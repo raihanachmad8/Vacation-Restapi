@@ -13,8 +13,8 @@ export class ArticleModel {
   count_likes: number;
   count_comments: number;
   count_bookmarks: number;
-  marked_bookmark?: boolean;
-  marked_like?: boolean;
+  marked_bookmark?: boolean = false;
+  marked_like?: boolean = false;
   user: UserModel;
   tag: string[];
   comment?: Comment[];
@@ -64,14 +64,15 @@ export class ArticleModel {
           }),
         ));
 
-      article.marked_bookmark =
-        partial?.ArticleBookmark.some(
+      partial.ArticleBookmark &&
+        (article.marked_bookmark = partial.ArticleBookmark.some(
           (bookmark: any) => bookmark.user_id === marked_user_id,
-        ) || false;
-      article.marked_like =
-        partial?.ArticleLike.some(
+        ));
+
+      partial.ArticleLike &&
+        (article.marked_like = partial.ArticleLike.some(
           (like: any) => like.user_id === marked_user_id,
-        ) || false;
+        ));
       partial.User &&
         (article.user = await Promise.resolve(UserModel.toJson(partial.User)));
       partial.Tag &&

@@ -13,6 +13,10 @@ import { HiddenGems } from './seeder/hidden-gems.seed';
 import { HiddenGemsComments } from './seeder/hidden-gems-comment.seed';
 import { HiddenGemsCommentsReplies } from './seeder/hidden-gems-comment-replies.seed';
 import { HiddenGemsCommentsRepliesReply } from './seeder/hidden-gems-comment-replies-reply.seed';
+import { HiddenGemsOperationDay } from './seeder/hidden-gems-operation-days.seed';
+import { Event } from './seeder/event.seed';
+import { EventOperationDaysAndHours } from './seeder/event-operation-day.seed';
+import { EventCategories } from './seeder/event-category.seed';
 const prisma = new PrismaClient();
 
 async function main() {
@@ -28,9 +32,13 @@ async function main() {
     await ArticleCommentReplyLikeSeeder.seed(prisma),
     await HiddenGemsCategories.seed(prisma),
     await HiddenGems.seed(prisma),
+    await HiddenGemsOperationDay.seed(prisma),
     await HiddenGemsComments.seed(prisma),
     await HiddenGemsCommentsReplies.seed(prisma),
     await HiddenGemsCommentsRepliesReply.seed(prisma),
+    await EventCategories.seed(prisma),
+    await Event.seed(prisma),
+    await EventOperationDaysAndHours.seed(prisma),
   ]);
 }
 
