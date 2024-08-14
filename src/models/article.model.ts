@@ -43,18 +43,22 @@ export class ArticleModel {
       partial.ArticleComment &&
         (await Promise.all(
           partial.ArticleComment.map(async (comment: any) => {
-            article.count_comments += comment.ArticleCommentReply.length;
-            comment.ArticleCommentReply.ChildReplies &&
+            comment.ArticleCommentReply &&
+              (article.count_comments += comment.ArticleCommentReply.length);
+            comment.ArticleCommentReply?.ChildReplies &&
               (await Promise.all(
                 comment.ArticleCommentReply.ChildReplies.map(
                   async (reply: any) => {
-                    article.count_comments +=
-                      reply.ArticleCommentReplyLike.length;
+                    //   reply.ArticleCommentReplyLike.length;
+                    reply.ArticleCommentReplyLike &&
+                      (article.count_likes +=
+                        reply.ArticleCommentReplyLike.length);
                   },
                 ),
               ));
 
-            article.count_likes += comment.ArticleCommentLike.length;
+            comment.ArticleCommentLike &&
+              (article.count_likes += comment.ArticleCommentLike.length);
             comment.ArticleCommentReply &&
               (await Promise.all(
                 comment.ArticleCommentReply.map(async (reply: any) => {

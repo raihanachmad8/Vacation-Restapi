@@ -330,12 +330,14 @@ export class ArticleService {
       const transaction = await this.prismaService.$transaction(
         async (prisma) => {
           const currentTags = article.Tag.map((tag) => tag.tag_name);
-          const tagsToConnect = tags.filter(
-            (tag) => !currentTags.includes(tag),
-          );
+          const tagsToConnect = tags
+            ? tags.filter((tag) => !currentTags.includes(tag))
+            : [];
           const tagsToDisconnect = currentTags.filter(
-            (tag) => !tags.includes(tag),
+            (tag) => !tags || !tags.includes(tag),
           );
+
+          // Upsert tags
           const tagUpserts = tagsToConnect.map((tag) =>
             prisma.tag.upsert({
               where: { tag_name: tag },
@@ -389,7 +391,6 @@ export class ArticleService {
         await uploadFile(file, this.articleStorageConfig, coverFileName);
         await deleteFile(article.Cover.filename, this.articleStorageConfig);
       }
-
       return await ArticleModel.toJson(transaction);
     } catch (error) {
       throw new InternalServerErrorException(
