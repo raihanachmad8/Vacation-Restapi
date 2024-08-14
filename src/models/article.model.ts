@@ -47,7 +47,7 @@ export class ArticleModel {
               (article.count_comments += comment.ArticleCommentReply.length);
             comment.ArticleCommentReply?.ChildReplies &&
               (await Promise.all(
-                comment.ArticleCommentReply.ChildReplies.map(
+                comment.ArticleCommentReply?.ChildReplies.map(
                   async (reply: any) => {
                     //   reply.ArticleCommentReplyLike.length;
                     reply.ArticleCommentReplyLike &&

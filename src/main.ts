@@ -12,9 +12,9 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
   app.enableCors({
-    origin: 'http://localhost:5173',
-    methods: 'GET,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Authorization',
+    origin: true,
+    allowedHeaders: 'Access-Control-Allow-Origin, Content-Type, Authorization',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
   process.stdin.resume();
@@ -26,6 +26,14 @@ async function bootstrap() {
 
   process.on('SIGINT', handle);
 
-  await app.listen(8000);
+  await app.listen(
+    process.env.APP_PORT || 8000,
+    process.env.APP_HOST || 'localhost',
+    () => {
+      console.log(
+        `Server is running on ${process.env.APP_HOST || 'localhost'}:${process.env.APP_PORT || 8000}`,
+      );
+    },
+  );
 }
 bootstrap();
