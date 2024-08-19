@@ -1,7 +1,7 @@
 import { generateFileUrl, hiddenGemsStorageConfig } from '@src/common/utils';
-import { OperationDay } from '@src/hidden-gems/types';
 import { UserModel } from './user';
 import { HiddenGemsCommentModel } from './hidden-gems-comment.model';
+import { OperatingDaysAndHours } from '@prisma/client';
 
 export class HiddenGemsModel {
   hidden_gem_id: string;
@@ -15,7 +15,7 @@ export class HiddenGemsModel {
   description: string;
   photos: string[];
   user: UserModel;
-  operation_days: OperationDay[];
+  operation_days: OperatingDaysAndHours[];
   comment: HiddenGemsCommentModel[];
   created_at: Date;
   updated_at: Date;

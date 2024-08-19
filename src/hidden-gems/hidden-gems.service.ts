@@ -240,7 +240,7 @@ export class HiddenGemsService {
       ...(location ? { location: { contains: location } } : {}),
       ...(price_start ? { price_start: { gte: price_start } } : {}),
       ...(price_end ? { price_end: { lte: price_end } } : {}),
-      ...(rating ? { rating: { gte: rating } } : {}),
+      ...(rating ? { rating: { gte: rating, lte: rating + 1 } } : {}),
       ...(s
         ? {
             OR: [{ title: { contains: s } }, { description: { contains: s } }],
@@ -290,6 +290,7 @@ export class HiddenGemsService {
       include: {
         Photos: true,
         User: true,
+        OperatingDaysAndHours: true,
         HiddenGemsCategory: true,
         HiddenGemsComment: {
           include: {
@@ -312,6 +313,7 @@ export class HiddenGemsService {
     if (!hiddenGems) {
       throw new NotFoundException('Hidden gems not found');
     }
+    console.log('hiddenGems', hiddenGems);
 
     if (
       hiddenGems.status !== Status.APPROVE &&

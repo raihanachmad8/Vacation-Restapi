@@ -1,6 +1,6 @@
 import { eventStorageConfig, generateFileUrl } from '@src/common/utils';
 import { UserModel } from './user';
-import { OperationDay } from '@src/event/types';
+import { EventOperationDaysAndHours } from '@prisma/client';
 
 export class EventModel {
   event_id: string;
@@ -14,7 +14,7 @@ export class EventModel {
   description: string;
   photos: string[];
   user: UserModel;
-  operation_days: OperationDay[];
+  operation_days: EventOperationDaysAndHours[];
   created_at: Date;
   updated_at: Date;
 

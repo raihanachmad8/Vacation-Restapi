@@ -75,7 +75,6 @@ export class HiddenGemsController {
       price_end: request?.price_end ? Number(request.price_end) : undefined,
       rating: request?.rating ? Number(request.rating) : undefined,
     };
-
     const response = await this.hiddenGemsService.search(ConvertRequest, user);
 
     return new WebResponse<HiddenGemsModel[]>({
