@@ -12,6 +12,7 @@ import { UserController } from './user/user.controller';
 import { UserModule } from './user/user.module';
 import { HiddenGemsModule } from './hidden-gems/hidden-gems.module';
 import { EventModule } from './event/event.module';
+import { BoardModule } from './board/board.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { EventModule } from './event/event.module';
     UserModule,
     HiddenGemsModule,
     EventModule,
+    BoardModule,
   ],
   providers: [
     {

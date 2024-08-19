@@ -9,3 +9,6 @@ export * from './hidden-gems.model';
 export * from './hidden-gems-comment.model';
 export * from './hidden-gems-comment-replies.model';
 export * from './event.model';
+export * from './kanban-board.model'
+export * from './kanban-card.model'
+export * from './kanban-team.model'

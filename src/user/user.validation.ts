@@ -1,5 +1,6 @@
 import { UpdateUserRequest } from './dto';
 import { z, ZodType } from 'zod';
+import { UserFilter } from './types';
 
 const MulterFileSchema = z.object({
   fieldname: z.string(),
@@ -25,4 +26,15 @@ export class UserValidation {
   }) as ZodType<UpdateUserRequest>;
 
   static readonly USER_ID: ZodType = z.string().uuid();
+
+  static readonly USER_FILTER: ZodType<UserFilter> = z.object({
+    s: z.string().optional(),
+    username: z.string().optional(),
+    email: z.string().optional(),
+    fullname: z.string().optional(),
+    limit: z.number().int().positive().optional(),
+    page: z.number().int().positive().optional(),
+    orderBy: z.string().optional(),
+    order: z.string().optional(),
+  }) as ZodType<UserFilter>;
 }

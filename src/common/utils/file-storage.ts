@@ -8,7 +8,7 @@ import { FileVisibility } from '@prisma/client';
 import axios from 'axios';
 import mime from 'mime-types';
 
-const appUrl = `${process.env.APP_PROTOCOL || 'http'}://${
+export const appUrl = `${process.env.APP_PROTOCOL || 'http'}://${
   process.env.APP_HOST || 'localhost'
 }:${process.env.APP_PORT || 8000}`;
 

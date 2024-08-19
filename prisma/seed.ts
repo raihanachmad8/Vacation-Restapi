@@ -17,6 +17,9 @@ import { HiddenGemsOperationDay } from './seeder/hidden-gems-operation-days.seed
 import { Event } from './seeder/event.seed';
 import { EventOperationDaysAndHours } from './seeder/event-operation-day.seed';
 import { EventCategories } from './seeder/event-category.seed';
+import { KanbanBoardSeeder } from './seeder/kanban-board.seed';
+import { KanbanBoardTeamSeeder } from './seeder/kanban-board-team.seed';
+import { KanbanCardSeeder } from './seeder/kanban-card.seed';
 const prisma = new PrismaClient();
 
 async function main() {
@@ -39,6 +42,9 @@ async function main() {
     await EventCategories.seed(prisma),
     await Event.seed(prisma),
     await EventOperationDaysAndHours.seed(prisma),
+    await KanbanBoardSeeder.seed(prisma),
+    await KanbanBoardTeamSeeder.seed(prisma),
+    await KanbanCardSeeder.seed(prisma),
   ]);
 }
 

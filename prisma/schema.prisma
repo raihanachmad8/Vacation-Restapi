@@ -37,6 +37,8 @@ model User {
   HiddenGemsComment       HiddenGemsComment[]
   HiddenGemsReply         HiddenGemsReply[]
   Event                   Event[]
+  KanbanBoard             KanbanBoard[]
+  KanbanTeam            KanbanTeam[]
 
   @@map("users")
 }
@@ -341,4 +343,117 @@ model EventOperationDaysAndHours {
   Event Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("event_operating_days_and_hours")
+}
+
+enum KanbanStatus {
+  TODO
+  DOING
+  DONE
+}
+
+enum KanbanPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+
+enum AccessType {
+  EDIT
+  COMMENT
+  VIEW
+}
+
+model KanbanBoard {
+  board_id   String       @id @default(uuid()) @db.Char(36)
+  title      String       @db.VarChar(255)
+  user_id    String       @db.Char(36)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  User       User         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  KanbanCard KanbanCard[]
+  KanbanTeam KanbanTeam[]
+  KanbanPublicAccess KanbanPublicAccess[]
+
+  @@map("kanban_boards")
+}
+
+enum KanbanRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model KanbanTeam {
+  team_id    String       @id @default(uuid()) @db.Char(36)
+  board_id   String       @db.Char(36)
+  user_id    String       @db.Char(36)
+  role       KanbanRole         @default(MEMBER)
+  permission AccessType   @default(VIEW)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+
+  User       User         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  KanbanBoard KanbanBoard @relation(fields: [board_id], references: [board_id], onDelete: Cascade, onUpdate: NoAction)
+  KanbanMember KanbanMember[]
+
+  @@map("kanban_teams")
+}
+
+model KanbanCard {
+  card_id     String         @id @default(uuid()) @db.Char(36)
+  board_id    String         @db.Char(36)
+  title       String         @db.VarChar(255)
+  description String?        @db.Text
+  status      KanbanStatus   @default(TODO)
+  priority    KanbanPriority @default(LOW)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+
+  KanbanBoard KanbanBoard   @relation(fields: [board_id], references: [board_id], onDelete: Cascade, onUpdate: NoAction)
+  KanbanMember KanbanMember[]
+  KanbanTaskList KanbanTaskList[]
+
+  @@map("kanban_cards")
+}
+
+model KanbanTaskList {
+  task_list_id String   @id @default(uuid()) @db.Char(36)
+  card_id      String   @db.Char(36)
+  task         String   @db.Text
+  is_done      Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  KanbanCard KanbanCard @relation(fields: [card_id], references: [card_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("kanban_task_lists")
+}
+
+model KanbanMember {
+  member_id   String       @id @default(uuid()) @db.Char(36)
+  card_id     String       @db.Char(36)
+  team_id     String       @db.Char(36)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  KanbanTeam  KanbanTeam  @relation(fields: [team_id], references: [team_id], onDelete: Cascade, onUpdate: NoAction)
+  KanbanCard  KanbanCard  @relation(fields: [card_id], references: [card_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("kanban_members")
+}
+
+model KanbanPublicAccess {
+  access_id   String   @id @default(uuid()) @db.Char(36)
+  board_id    String   @db.Char(36)
+  code        String   @db.VarChar(255)
+  permission  AccessType @default(VIEW)
+  hashed      String   @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  KanbanBoard KanbanBoard @relation(fields: [board_id], references: [board_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("kanban_public_access")
 }

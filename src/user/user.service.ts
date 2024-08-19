@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FileVisibility } from '@prisma/client';
-import { UserModel } from '@src/models';
+import { Paging, UserModel } from '@src/models';
 import { PrismaService } from '@src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { FileStorageOptions } from '@src/file-storage/types';
@@ -12,6 +12,7 @@ import { deleteFile, uploadFile } from '@src/common/utils/file-storage';
 import { ValidationService } from '@src/common/validation.service';
 import { UserValidation } from './user.validation';
 import { UpdateUserRequest } from './dto';
+import { UserFilter } from './types';
 
 @Injectable()
 export class UserService {
@@ -112,5 +113,107 @@ export class UserService {
 
   private hashPassword(password: string, salt: string): string {
     return bcrypt.hashSync(password, salt);
+  }
+
+  async search(query: UserFilter): Promise<{
+    data: UserModel[];
+    paging: Paging;
+  }> {
+    const ValidatedRequest = this.validationService.validate(
+      UserValidation.USER_FILTER,
+      query,
+    );
+
+    const {
+      s,
+      username,
+      email,
+      fullname,
+      limit = 10,
+      page = 1,
+      orderBy = 'username',
+      order = 'asc',
+    } = ValidatedRequest;
+
+    const where = {
+      ...(s
+        ? {
+            OR: [
+              {
+                fullname: {
+                  contains: s,
+                },
+              },
+              {
+                username: {
+                  contains: s,
+                },
+              },
+              {
+                email: {
+                  contains: s,
+                },
+              },
+            ],
+          }
+        : {}),
+
+      ...(username
+        ? {
+            username: {
+              contains: username,
+            },
+          }
+        : {}),
+      ...(email
+        ? {
+            email: {
+              contains: email,
+            },
+          }
+        : {}),
+      ...(fullname
+        ? {
+            fullname: {
+              contains: fullname,
+            },
+          }
+        : {}),
+    };
+
+    const take = limit;
+    const skip = (page - 1) * take;
+    const orderByClause = {
+      [orderBy]: order,
+    };
+
+    const [users, total] = await Promise.all([
+      this.prismaService.user.findMany({
+        where,
+        take,
+        skip,
+        orderBy: orderByClause,
+      }),
+      this.prismaService.user.count({
+        where,
+      }),
+    ]);
+
+    const data = await Promise.all(
+      users.map(async (user) => {
+        return await UserModel.toJson(user);
+      }),
+    );
+    const paging: Paging = {
+      current_page: page,
+      total,
+      last_page: Math.ceil(total / take),
+      first_page: 1,
+    };
+
+    return {
+      data,
+      paging,
+    };
   }
 }

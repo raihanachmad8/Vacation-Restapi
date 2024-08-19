@@ -31,7 +31,7 @@ async function bootstrap() {
     process.env.APP_HOST || 'localhost',
     () => {
       console.log(
-        `Server is running on ${process.env.APP_HOST || 'localhost'}:${process.env.APP_PORT || 8000}`,
+        `Server is running on ${process.env.APP_PROTOCOL || 'http'}://${process.env.APP_HOST || 'localhost'}:${process.env.APP_PORT || 8000}`,
       );
     },
   );

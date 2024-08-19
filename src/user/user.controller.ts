@@ -14,6 +14,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UserModel, WebResponse } from '@src/models';
 import { User } from '@prisma/client';
 import { UpdateUserRequest } from './dto';
+import { UserFilter } from './types';
+import { Public } from '@src/common/decorators';
 
 @Controller('user')
 export class UserController {
@@ -50,6 +52,19 @@ export class UserController {
       statusCode: HttpStatus.OK,
       message: 'User data updated',
       data: response,
+    });
+  }
+
+  @Public()
+  @Get('search')
+  @HttpCode(HttpStatus.OK)
+  async search(@Body() request: UserFilter): Promise<WebResponse<UserModel[]>> {
+    const response = await this.userService.search(request);
+    return new WebResponse<UserModel[]>({
+      statusCode: HttpStatus.OK,
+      message: 'User data retrieved',
+      data: response.data,
+      paging: response.paging,
     });
   }
 }
