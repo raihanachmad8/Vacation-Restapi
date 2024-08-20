@@ -41,7 +41,7 @@ export class UserSeeder extends ContractSeeder {
         const salt = bcrypt.genSaltSync(10);
         const hashedPassword = bcrypt.hashSync(user.password, salt);
         const profilePicture = await downloadAndSaveImage(
-          faker.image.avatarLegacy(),
+          faker.image.avatarGitHub(),
           profileStorageConfig,
         );
         await prisma.user.create({
