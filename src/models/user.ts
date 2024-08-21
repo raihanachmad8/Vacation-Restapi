@@ -1,5 +1,6 @@
 import { Role } from '@prisma/client';
-import { generateFileUrl, profileStorageConfig } from '@src/common/utils';
+import { generateFileUrl } from '@src/common/utils';
+import { profileStorageConfig } from '@root/config/storage.config';
 
 export class UserModel {
   user_id: string;

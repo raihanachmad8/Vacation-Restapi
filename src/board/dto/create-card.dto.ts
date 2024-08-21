@@ -5,6 +5,7 @@ import { TaskList } from '../types';
 export class CreateCardKanbanRequest {
   board_id: string;
   title: string;
+  cover?: Express.Multer.File;
   description?: string;
   priority?: KanbanPriority;
   status?: KanbanStatus;

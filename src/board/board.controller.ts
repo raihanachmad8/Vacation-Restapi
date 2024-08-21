@@ -10,6 +10,8 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
 import { CurrentUser } from '@src/common/decorators/current-user.decorator';
@@ -28,7 +30,7 @@ import {
 import { BoardFilter } from './types';
 import { UpdateBoardRequest } from './dto/update.dto';
 import { UpdateCardKanbanRequest } from './dto/update-card.dto';
-import { request } from 'http';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('board')
 export class BoardController {
@@ -55,12 +57,15 @@ export class BoardController {
   }
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('cover'))
   async createBoard(
     @CurrentUser() user: User,
     @Body() request: CreateBoardRequest,
+    @UploadedFile() cover?: Express.Multer.File,
   ): Promise<WebResponse<KanbanBoardModel>> {
     const ConvertRequest = {
       ...request,
+      cover: cover,
       user_id: user.user_id,
     };
 
@@ -102,13 +107,16 @@ export class BoardController {
 
   @Post(':board_id')
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('cover'))
   async createCard(
     @Param('board_id') board_id: string,
     @CurrentUser() user: User,
     @Body() request: CreateCardKanbanRequest,
+    @UploadedFile() cover?: Express.Multer.File,
   ): Promise<WebResponse<KanbanCardModel>> {
     const ConvertRequest = {
       ...request,
+      cover: cover,
       board_id: board_id,
       ...(request.tasklist && {
         tasklist: request.tasklist.map((tasklist) => ({
@@ -154,13 +162,16 @@ export class BoardController {
 
   @Put(':board_id')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('cover'))
   async updateBoard(
     @CurrentUser() user: User,
     @Param('board_id') board_id: string,
     @Body() request: UpdateBoardRequest,
+    @UploadedFile() cover?: Express.Multer.File,
   ): Promise<WebResponse<KanbanBoardModel>> {
     const ConvertRequest = {
       ...request,
+      cover: cover,
       board_id,
       user_id: user.user_id,
     };
@@ -175,15 +186,18 @@ export class BoardController {
 
   @Put(':board_id/card/:card_id')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('cover'))
   async updateCard(
     @CurrentUser() user: User,
     @Param('board_id') board_id: string,
     @Param('card_id') card_id: string,
     @Body() request: UpdateCardKanbanRequest,
+    @UploadedFile() cover?: Express.Multer.File,
   ): Promise<WebResponse<KanbanCardModel>> {
     const ConvertRequest = {
       ...request,
       board_id,
+      cover: cover,
       card_id,
       ...(request.tasklist && {
         tasklist: request.tasklist.map((tasklist) => ({

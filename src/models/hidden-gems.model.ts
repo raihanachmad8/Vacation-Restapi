@@ -1,7 +1,8 @@
-import { generateFileUrl, hiddenGemsStorageConfig } from '@src/common/utils';
+import { generateFileUrl } from '@src/common/utils';
 import { UserModel } from './user';
 import { HiddenGemsCommentModel } from './hidden-gems-comment.model';
 import { OperatingDaysAndHours } from '@prisma/client';
+import { hiddenGemsStorageConfig } from '@root/config/storage.config';
 
 export class HiddenGemsModel {
   hidden_gem_id: string;

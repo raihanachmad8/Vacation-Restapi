@@ -1,10 +1,13 @@
-import { AccessType, PrismaClient } from '@prisma/client';
+import { AccessType, FileVisibility, PrismaClient } from '@prisma/client';
 import { ContractSeeder } from './contract/seed.interface';
 import { faker } from '@faker-js/faker';
 import { hashLink } from './../../src/common/utils/security';
+import { deleteAllFiles, downloadAndSaveImage } from './../../src/common/utils';
+import { kanbanBoardStorageConfig } from './../../config/storage.config';
 
 export class KanbanBoardSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {
+    await deleteAllFiles(kanbanBoardStorageConfig);
     const user = await prisma.user.findMany();
     const board = Array.from({ length: 10 }).map((_, index) => {
       return {
@@ -15,9 +18,35 @@ export class KanbanBoardSeeder extends ContractSeeder {
       };
     });
 
-    await prisma.kanbanBoard.createMany({
-      data: board,
-    });
+    await Promise.all(
+      board.map(async (board) => {
+        await prisma.kanbanBoard.create({
+          data: {
+            title: board.title,
+            User: {
+              connect: { user_id: board.user_id },
+            },
+            created_at: board.created_at,
+            updated_at: board.updated_at,
+            Cover: {
+              create: {
+                filename: await downloadAndSaveImage(
+                  faker.image.urlPicsumPhotos({
+                    width: 800,
+                    height: 400,
+                  }),
+                  kanbanBoardStorageConfig,
+                ),
+                User: {
+                  connect: { user_id: board.user_id },
+                },
+                visibility: FileVisibility.PUBLIC,
+              },
+            },
+          },
+        });
+      }),
+    );
 
     const boards = await prisma.kanbanBoard.findMany();
 

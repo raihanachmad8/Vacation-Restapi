@@ -1,11 +1,8 @@
 import { FileVisibility, PrismaClient, Role, Status } from '@prisma/client';
 import { ContractSeeder } from './contract/seed.interface';
 import { faker } from '@faker-js/faker';
-import {
-  deleteAllFiles,
-  downloadAndSaveImage,
-  hiddenGemsStorageConfig,
-} from './../../src/common/utils';
+import { deleteAllFiles, downloadAndSaveImage } from './../../src/common/utils';
+import { hiddenGemsStorageConfig } from './../../config/storage.config';
 
 export class HiddenGems extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {

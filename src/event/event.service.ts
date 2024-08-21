@@ -10,7 +10,6 @@ import { CreateEventRequest, UpdateEventRequest } from './dto';
 import { EventValidation } from './event.validation';
 import {
   deleteFile,
-  eventStorageConfig,
   generateRandomFileName,
   uploadFile,
 } from '@src/common/utils';
@@ -19,6 +18,7 @@ import { FileVisibility, Role, Status, User } from '@prisma/client';
 import { EventModel } from '@src/models';
 import { eventFilter } from './types';
 import { Paging } from '@src/models';
+import { eventStorageConfig } from '@root/config/storage.config';
 
 @Injectable()
 export class EventService {

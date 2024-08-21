@@ -25,3 +25,13 @@ export const eventStorageConfig: FileStorageOptions = {
   visibility: FileVisibility.PUBLIC,
   storageFolder: 'events',
 };
+
+export const kanbanBoardStorageConfig: FileStorageOptions = {
+  visibility: FileVisibility.PUBLIC,
+  storageFolder: 'kanban-board',
+};
+
+export const kanbanCardStorageConfig: FileStorageOptions = {
+  visibility: FileVisibility.PUBLIC,
+  storageFolder: 'kanban-card',
+};

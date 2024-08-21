@@ -7,7 +7,6 @@ import {
 import {
   deleteFile,
   generateRandomFileName,
-  hiddenGemsStorageConfig,
   uploadFile,
 } from '@src/common/utils';
 import { FileStorageOptions } from '@src/file-storage/types';
@@ -26,7 +25,7 @@ import {
 } from './dto';
 import { HiddenGemsCategories } from 'prisma/seeder/hidden-gems-category.seed';
 import { HiddenGemsCommentModel } from '@src/models/hidden-gems-comment.model';
-import { tr } from '@faker-js/faker';
+import { hiddenGemsStorageConfig } from '@root/config/storage.config';
 
 @Injectable()
 export class HiddenGemsService {

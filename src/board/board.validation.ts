@@ -10,8 +10,22 @@ import { UpdateBoardRequest } from './dto/update.dto';
 import { UpdateCardKanbanRequest } from './dto/update-card.dto';
 import { InviteTeamRequest } from './dto/invite-team.dto';
 
+const MulterFileSchema = z.object({
+  fieldname: z.string(),
+  originalname: z.string().regex(/\.(jpg|jpeg|png)$/i),
+  encoding: z.string(),
+  mimetype: z.string(),
+  buffer: z.instanceof(Buffer),
+  size: z.number().max(5 * 1024 * 1024), // 5MB
+  stream: z.any().optional(),
+  destination: z.string().optional(),
+  filename: z.string().optional(),
+  path: z.string().optional(),
+});
+
 export class BoardValidation {
   static readonly CREATE_BOARD_REQUEST: ZodType<CreateBoardRequest> = z.object({
+    cover: MulterFileSchema.optional(),
     title: z.string().min(3),
     user_id: z.string().uuid(),
   }) as ZodType<CreateBoardRequest>;
@@ -27,6 +41,7 @@ export class BoardValidation {
   static readonly CREATE_CARD_KANBAN_REQUEST: ZodType<CreateCardKanbanRequest> =
     z.object({
       board_id: z.string().uuid(),
+      cover: MulterFileSchema.optional(),
       title: z.string().min(3),
       description: z.string().min(10).optional(),
       status: z.enum(['TODO', 'DOING', 'DONE']).optional(),
@@ -62,6 +77,7 @@ export class BoardValidation {
 
   static readonly UPDATE_BOARD_REQUEST: ZodType<UpdateBoardRequest> = z.object({
     board_id: z.string().uuid(),
+    cover: MulterFileSchema.optional(),
     title: z.string().min(3).optional(),
     user_id: z.string().uuid(),
   }) as ZodType<UpdateBoardRequest>;
@@ -69,6 +85,7 @@ export class BoardValidation {
   static readonly UPDATE_CARD_KANBAN_REQUEST: ZodType<UpdateCardKanbanRequest> =
     z.object({
       board_id: z.string().uuid(),
+      cover: MulterFileSchema.optional(),
       card_id: z.string().uuid(),
       title: z.string().min(3).optional(),
       description: z.string().min(10).optional(),

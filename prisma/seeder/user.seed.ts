@@ -2,11 +2,8 @@ import { PrismaClient, Role } from '@prisma/client';
 import { ContractSeeder } from './contract/seed.interface';
 import * as bcrypt from 'bcrypt';
 import { faker } from '@faker-js/faker';
-import {
-  deleteAllFiles,
-  downloadAndSaveImage,
-  profileStorageConfig,
-} from './../../src/common/utils';
+import { deleteAllFiles, downloadAndSaveImage } from './../../src/common/utils';
+import { profileStorageConfig } from './../../config/storage.config';
 
 export class UserSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {

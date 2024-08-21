@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@src/prisma/prisma.service';
@@ -22,13 +23,24 @@ import { ValidationService } from '@src/common/validation.service';
 import { BoardValidation } from './board.validation';
 import { UpdateCardKanbanRequest } from './dto/update-card.dto';
 import { UpdateBoardRequest } from './dto/update.dto';
-import { appUrl } from '@src/common/utils';
+import { appUrl, deleteFile, uploadFile } from '@src/common/utils';
 import { InviteTeamRequest } from './dto/invite-team.dto';
-import { AccessType, KanbanRole, User } from '@prisma/client';
+import { AccessType, FileVisibility, KanbanRole, User } from '@prisma/client';
 import { hashLink, validateHashLink } from '@src/common/utils/security';
+import {
+  kanbanBoardStorageConfig,
+  kanbanCardStorageConfig,
+} from '@root/config/storage.config';
+import { FileStorageOptions } from '../file-storage/types';
 
 @Injectable()
 export class BoardService {
+  private readonly kanbanBoardStorageConfig: FileStorageOptions =
+    kanbanBoardStorageConfig;
+
+  private readonly kanbanCardStorageConfig: FileStorageOptions =
+    kanbanCardStorageConfig;
+
   constructor(
     private prismaService: PrismaService,
     private validationService: ValidationService,
@@ -76,40 +88,60 @@ export class BoardService {
       BoardValidation.CREATE_BOARD_REQUEST,
       request,
     );
-    const { title, user_id } = ValidatedRequest;
-    const board = await this.prismaService.kanbanBoard.create({
-      data: {
-        title,
-        User: {
-          connect: {
-            user_id: user_id,
-          },
-        },
-        KanbanTeam: {
-          create: {
+    let coverFileName: string;
+    const { cover, title, user_id } = ValidatedRequest;
+    try {
+      const board = await this.prismaService.$transaction(async (prisma) => {
+        coverFileName = await uploadFile(cover, this.kanbanBoardStorageConfig);
+        return prisma.kanbanBoard.create({
+          data: {
+            title,
             User: {
               connect: {
-                user_id,
+                user_id: user_id,
               },
             },
-            permission: AccessType.EDIT,
-            role: KanbanRole.OWNER,
+            KanbanTeam: {
+              create: {
+                User: {
+                  connect: {
+                    user_id,
+                  },
+                },
+                permission: AccessType.EDIT,
+                role: KanbanRole.OWNER,
+              },
+            },
           },
-        },
-      },
-      include: {
-        User: true,
-        KanbanTeam: {
           include: {
             User: true,
+            Cover: true,
+            KanbanTeam: {
+              include: {
+                User: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
+      });
 
-    await this.generateLink(board.board_id, board.User, AccessType.VIEW);
+      await this.generateLink(board.board_id, board.User, AccessType.VIEW);
 
-    return KanbanBoardModel.toJson(board);
+      return KanbanBoardModel.toJson(board);
+    } catch (error) {
+      try {
+        const deleteMessage = await deleteFile(
+          coverFileName,
+          this.kanbanBoardStorageConfig,
+        );
+        console.error(deleteMessage);
+      } catch (error) {
+        console.error(error.message);
+      }
+      throw new InternalServerErrorException(
+        `Error creating article: ${error.message}`,
+      );
+    }
   }
 
   async getDetailBoard(board_id: string): Promise<KanbanBoardModel> {
@@ -119,6 +151,7 @@ export class BoardService {
       },
       include: {
         User: true,
+        Cover: true,
         KanbanCard: {
           include: {
             KanbanTaskList: true,
@@ -213,6 +246,7 @@ export class BoardService {
         },
         include: {
           User: true,
+          Cover: true,
           KanbanTeam: {
             include: {
               User: true,
@@ -251,6 +285,7 @@ export class BoardService {
       request,
     );
     const {
+      cover,
       board_id,
       title,
       description,
@@ -268,35 +303,56 @@ export class BoardService {
       throw new NotFoundException('Board not found');
     }
 
-    const card = await this.prismaService.kanbanCard.create({
-      data: {
-        title,
-        description,
-        priority,
-        status,
-        KanbanTaskList: {
-          create: tasklist,
-        },
-        KanbanMember: {
-          create: members,
-        },
-        board_id,
-      },
-      include: {
-        KanbanTaskList: true,
-        KanbanMember: {
+    let coverFileName: string;
+
+    try {
+      const card = await this.prismaService.$transaction(async (prisma) => {
+        coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
+        return prisma.kanbanCard.create({
+          data: {
+            title,
+            description,
+            priority,
+            status,
+            KanbanTaskList: {
+              create: tasklist,
+            },
+            KanbanMember: {
+              create: members,
+            },
+            board_id,
+          },
           include: {
-            KanbanTeam: {
+            KanbanTaskList: true,
+            Cover: true,
+            KanbanMember: {
               include: {
-                User: true,
+                KanbanTeam: {
+                  include: {
+                    User: true,
+                  },
+                },
               },
             },
           },
-        },
-      },
-    });
+        });
+      });
 
-    return await KanbanCardModel.toJson(card);
+      return KanbanCardModel.toJson(card);
+    } catch (error) {
+      try {
+        const deleteMessage = await deleteFile(
+          coverFileName,
+          this.kanbanCardStorageConfig,
+        );
+        console.error(deleteMessage);
+      } catch (error) {
+        console.error(error.message);
+      }
+      throw new InternalServerErrorException(
+        `Error creating article: ${error.message}`,
+      );
+    }
   }
 
   async getCard({ board_id, card_id }): Promise<KanbanCardModel> {
@@ -307,6 +363,7 @@ export class BoardService {
       },
       include: {
         KanbanTaskList: true,
+        Cover: true,
         KanbanMember: {
           include: {
             KanbanTeam: {
@@ -334,24 +391,26 @@ export class BoardService {
       request,
     );
 
-    console.log(ValidatedRequest);
-    try {
-      const {
-        card_id,
-        title,
-        description,
-        priority,
-        status,
-        tasklist = [],
-        members = [],
-      } = ValidatedRequest;
+    const {
+      card_id,
+      cover,
+      title,
+      description,
+      priority,
+      status,
+      tasklist = [],
+      members = [],
+    } = ValidatedRequest;
 
+    let coverFileName: string;
+    try {
       const existingCard = await this.prismaService.kanbanCard.findUnique({
         where: {
           card_id,
         },
         include: {
           KanbanTaskList: true,
+          Cover: true,
           KanbanMember: true,
         },
       });
@@ -422,6 +481,10 @@ export class BoardService {
           team_id: id,
         }));
 
+      if (cover.filename && cover.filename !== existingCard.Cover.filename) {
+        coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
+      }
+
       const card = await this.prismaService.kanbanCard.update({
         where: {
           card_id,
@@ -440,6 +503,19 @@ export class BoardService {
             create: tasksToCreate,
             updateMany: tasksToUpdate,
           },
+          Cover: {
+            update: coverFileName
+              ? {
+                  filename: coverFileName,
+                  visibility: FileVisibility.PUBLIC,
+                }
+              : undefined,
+            delete: !coverFileName
+              ? {
+                  filename: existingCard.Cover.filename,
+                }
+              : undefined,
+          },
           KanbanMember: {
             deleteMany: {
               team_id: {
@@ -452,6 +528,7 @@ export class BoardService {
         },
 
         include: {
+          Cover: true,
           KanbanTaskList: true,
           KanbanMember: {
             include: {
@@ -467,6 +544,15 @@ export class BoardService {
 
       return await KanbanCardModel.toJson(card);
     } catch (error) {
+      try {
+        const deleteMessage = await deleteFile(
+          coverFileName,
+          this.kanbanCardStorageConfig,
+        );
+        console.error(deleteMessage);
+      } catch (error) {
+        console.error(error.message);
+      }
       console.log(error);
     }
   }
@@ -476,36 +562,77 @@ export class BoardService {
       BoardValidation.UPDATE_BOARD_REQUEST,
       request,
     );
-    const { board_id, title } = ValidatedRequest;
+    const { cover, board_id, title } = ValidatedRequest;
 
     const board = await this.prismaService.kanbanBoard.findUnique({
       where: {
         board_id,
+      },
+      include: {
+        Cover: true,
       },
     });
 
     if (!board) {
       throw new NotFoundException('Board not found');
     }
+    let coverFileName: string;
+    try {
+      const boardUpdate = await this.prismaService.$transaction(
+        async (prisma) => {
+          coverFileName = cover
+            ? await uploadFile(cover, this.kanbanBoardStorageConfig)
+            : null;
 
-    const boardUpdate = await this.prismaService.kanbanBoard.update({
-      where: {
-        board_id,
-      },
-      data: {
-        title,
-      },
-      include: {
-        User: true,
-        KanbanTeam: {
-          include: {
-            User: true,
-          },
+          return prisma.kanbanBoard.update({
+            where: {
+              board_id,
+            },
+            data: {
+              title,
+              Cover: {
+                update: coverFileName
+                  ? {
+                      filename: coverFileName,
+                      visibility: FileVisibility.PUBLIC,
+                    }
+                  : undefined,
+                delete: !coverFileName
+                  ? {
+                      filename: board.Cover.filename,
+                    }
+                  : undefined,
+              },
+            },
+            include: {
+              User: true,
+              Cover: true,
+              KanbanTeam: {
+                include: {
+                  User: true,
+                },
+              },
+            },
+          });
         },
-      },
-    });
+      );
 
-    return await KanbanBoardModel.toJson(boardUpdate);
+      return await KanbanBoardModel.toJson(boardUpdate);
+    } catch (error) {
+      try {
+        const deleteMessage = await deleteFile(
+          coverFileName,
+          this.kanbanBoardStorageConfig,
+        );
+        console.error(deleteMessage);
+      } catch (error) {
+        console.error(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        `Error creating article: ${error.message}`,
+      );
+    }
   }
 
   async deleteBoard(board_id: string, user: User): Promise<void> {

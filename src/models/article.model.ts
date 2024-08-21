@@ -1,7 +1,7 @@
-import { articleStorageConfig, generateFileUrl } from '@src/common/utils';
+import { generateFileUrl } from '@src/common/utils';
 import { CommentModel } from './article-comment.model';
 import { UserModel } from './user';
-import { ar } from '@faker-js/faker';
+import { articleStorageConfig } from '@root/config/storage.config';
 
 export class ArticleModel {
   article_id: number;

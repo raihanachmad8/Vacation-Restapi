@@ -1,10 +1,12 @@
 import { KanbanPriority, KanbanStatus, KanbanTaskList } from '@prisma/client';
-import { UserModel } from './user';
 import { KanbanMemberModel } from './kanban-member.model';
+import { generateFileUrl } from '../common/utils';
+import { kanbanCardStorageConfig } from '@root/config/storage.config';
 
 export class KanbanCardModel {
   card_id: string;
   board_id: string;
+  cover: string | null;
   title: string;
   description: string;
   status: KanbanStatus;
@@ -15,10 +17,14 @@ export class KanbanCardModel {
   updated_at: Date;
 
   static async toJson(partial: Partial<any>): Promise<KanbanCardModel> {
-    // console.log(partial);
     const card = new KanbanCardModel();
+    partial.Cover &&
+      (card.cover = await generateFileUrl(
+        partial.Cover.filename,
+        kanbanCardStorageConfig,
+      ));
     partial.card_id && (card.card_id = partial.card_id);
-    partial.board_id && (card.board_id = partial.board_id);
+    partial.card_id && (card.board_id = partial.board_id);
     partial.title && (card.title = partial.title);
     partial.description && (card.description = partial.description);
     partial.status && (card.status = partial.status);

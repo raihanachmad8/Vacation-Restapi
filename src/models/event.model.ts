@@ -1,6 +1,7 @@
-import { eventStorageConfig, generateFileUrl } from '@src/common/utils';
+import { generateFileUrl } from '@src/common/utils';
 import { UserModel } from './user';
 import { EventOperationDaysAndHours } from '@prisma/client';
+import { eventStorageConfig } from '@root/config/storage.config';
 
 export class EventModel {
   event_id: string;

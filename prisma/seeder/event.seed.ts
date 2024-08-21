@@ -1,11 +1,8 @@
 import { FileVisibility, PrismaClient, Role, Status } from '@prisma/client';
 import { ContractSeeder } from './contract/seed.interface';
 import { faker } from '@faker-js/faker';
-import {
-  deleteAllFiles,
-  downloadAndSaveImage,
-  eventStorageConfig,
-} from '../../src/common/utils';
+import { deleteAllFiles, downloadAndSaveImage } from '../../src/common/utils';
+import { eventStorageConfig } from './../..//config/storage.config';
 
 export class Event extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {

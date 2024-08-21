@@ -1,9 +1,17 @@
-import { KanbanPriority, KanbanStatus, PrismaClient } from '@prisma/client';
+import {
+  FileVisibility,
+  KanbanPriority,
+  KanbanStatus,
+  PrismaClient,
+} from '@prisma/client';
 import { ContractSeeder } from './contract/seed.interface';
 import { faker } from '@faker-js/faker';
+import { deleteAllFiles, downloadAndSaveImage } from './../../src/common/utils';
+import { kanbanCardStorageConfig } from './../../config/storage.config';
 
 export class KanbanCardSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {
+    await deleteAllFiles(kanbanCardStorageConfig);
     const board = await prisma.kanbanBoard.findMany();
 
     const cardPromises = board.map(async (board) => {
@@ -51,6 +59,19 @@ export class KanbanCardSeeder extends ContractSeeder {
 
     await Promise.all(
       card.map(async (c) => {
+        const coverFilename = await downloadAndSaveImage(
+          faker.image.urlPicsumPhotos({
+            width: 800,
+            height: 400,
+          }),
+          kanbanCardStorageConfig,
+        );
+
+        const user = await prisma.kanbanTeam.findFirst({
+          where: {
+            team_id: c.team_id,
+          },
+        });
         await prisma.kanbanCard.create({
           data: {
             KanbanBoard: {
@@ -64,6 +85,17 @@ export class KanbanCardSeeder extends ContractSeeder {
             priority: c.priority,
             KanbanTaskList: {
               create: c.tasklist,
+            },
+            Cover: {
+              create: {
+                User: {
+                  connect: {
+                    user_id: user.user_id,
+                  },
+                },
+                filename: coverFilename,
+                visibility: FileVisibility.PUBLIC,
+              },
             },
             KanbanMember: {
               create: {

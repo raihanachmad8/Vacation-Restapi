@@ -15,7 +15,6 @@ import {
 } from '@src/common/utils/file-storage';
 import { FileStorageOptions } from '@src/file-storage/types';
 import { User, ArticleStatus } from '@prisma/client';
-import { articleStorageConfig } from '@src/common/utils';
 import { CommentRequest } from './dto';
 import { CommentModel } from '@src/models/article-comment.model';
 import { ReplyModel } from '@src/models/article-comment-replies.model';
@@ -23,6 +22,7 @@ import { ValidationService } from '@src/common/validation.service';
 import { ArticleValidation } from './article.validation';
 import { CreateArticleRequest, UpdateArticleRequest } from './dto';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+import { articleStorageConfig } from '@root/config/storage.config';
 
 @Injectable()
 export class ArticleService {

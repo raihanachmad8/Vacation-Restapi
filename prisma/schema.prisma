@@ -41,7 +41,6 @@ model User {
   EventInterest           EventInterest[]
   KanbanBoard             KanbanBoard[]
   KanbanTeam              KanbanTeam[]
-  
 
   @@map("users")
 }
@@ -103,16 +102,18 @@ enum FileVisibility {
 }
 
 model File {
-  id         String         @id @default(uuid()) @db.Char(36)
-  filename   String         @db.VarChar(255)
-  visibility FileVisibility @default(PRIVATE)
-  user_id    String         @db.Char(36)
-  created_at DateTime       @default(now())
-  updated_at DateTime       @updatedAt
-  User       User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  Article    Article[]
-  HiddenGems HiddenGems[]   @relation("HiddenGemsFiles")
-  Event      Event[]        @relation("EventFiles")
+  id          String         @id @default(uuid()) @db.Char(36)
+  filename    String         @db.VarChar(255)
+  visibility  FileVisibility @default(PRIVATE)
+  user_id     String         @db.Char(36)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+  User        User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  Article     Article[]
+  HiddenGems  HiddenGems[]   @relation("HiddenGemsFiles")
+  Event       Event[]        @relation("EventFiles")
+  KanbanCard  KanbanCard[]
+  KanbanBoard KanbanBoard[]
 
   @@map("files")
 }
@@ -243,14 +244,14 @@ model HiddenGems {
 
 model HiddenGemsRating {
   hidden_gem_id String   @db.Char(36)
-  comment_id    String  @db.Char(36)
+  comment_id    String   @db.Char(36)
   user_id       String   @db.Char(36)
   rating        Float    @db.Float
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  User       User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  HiddenGems HiddenGems @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
+  User       User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGems HiddenGems        @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
   Comment    HiddenGemsComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([hidden_gem_id, comment_id, user_id])
@@ -290,9 +291,9 @@ model HiddenGemsComment {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
-  User            User              @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  HiddenGems      HiddenGems        @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
-  HiddenGemsReply HiddenGemsReply[]
+  User             User               @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGems       HiddenGems         @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
+  HiddenGemsReply  HiddenGemsReply[]
   HiddenGemsRating HiddenGemsRating[]
 
   @@map("hidden_gems_comments")
@@ -349,12 +350,11 @@ model Event {
   @@map("events")
 }
 
-
 model EventInterest {
-  event_id    String   @db.Char(36)
-  user_id     String   @db.Char(36)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  event_id   String   @db.Char(36)
+  user_id    String   @db.Char(36)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   User  User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   Event Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
@@ -362,7 +362,6 @@ model EventInterest {
   @@id([event_id, user_id])
   @@map("event_interests")
 }
-
 
 model EventOperationDaysAndHours {
   operating_id String    @id @default(uuid()) @db.Char(36)
@@ -400,6 +399,7 @@ model KanbanBoard {
   board_id   String   @id @default(uuid()) @db.Char(36)
   title      String   @db.VarChar(255)
   user_id    String   @db.Char(36)
+  cover_id   String?  @db.Char(36)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -407,6 +407,7 @@ model KanbanBoard {
   KanbanCard         KanbanCard[]
   KanbanTeam         KanbanTeam[]
   KanbanPublicAccess KanbanPublicAccess[]
+  Cover              File?                @relation(fields: [cover_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@map("kanban_boards")
 }
@@ -436,6 +437,7 @@ model KanbanTeam {
 model KanbanCard {
   card_id     String         @id @default(uuid()) @db.Char(36)
   board_id    String         @db.Char(36)
+  cover_id    String?        @db.Char(36)
   title       String         @db.VarChar(255)
   description String?        @db.Text
   status      KanbanStatus   @default(TODO)
@@ -446,6 +448,7 @@ model KanbanCard {
   KanbanBoard    KanbanBoard      @relation(fields: [board_id], references: [board_id], onDelete: Cascade, onUpdate: NoAction)
   KanbanMember   KanbanMember[]
   KanbanTaskList KanbanTaskList[]
+  Cover          File?            @relation(fields: [cover_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@map("kanban_cards")
 }

@@ -6,15 +6,16 @@ import {
 } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import { ContractSeeder } from './contract/seed.interface';
-import {
-  articleStorageConfig,
-  deleteAllFiles,
-  downloadAndSaveImage,
-} from './../../src/common/utils';
+import { deleteAllFiles, downloadAndSaveImage } from './../../src/common/utils';
+import { articleStorageConfig } from '../../config/storage.config';
 
 export class ArticleSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {
     await deleteAllFiles(articleStorageConfig);
+    await deleteAllFiles({
+      visibility: FileVisibility.PUBLIC,
+      storageFolder: 'file-storage',
+    });
 
     // Fetch users with the MEMBER role
     const users = await prisma.user.findMany({
