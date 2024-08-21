@@ -77,6 +77,8 @@ export class EventController {
         : undefined,
       price_end: request?.price_end ? Number(request.price_end) : undefined,
       rating: request?.rating ? Number(request.rating) : undefined,
+      page: request?.page ? Number(request.page) : undefined,
+      limit: request?.limit ? Number(request.limit) : undefined,
     };
 
     const response = await this.eventService.search(ConvertRequest, user);
@@ -215,6 +217,23 @@ export class EventController {
       data: response,
       message: 'Event changed to pending successfully',
       statusCode: HttpStatus.OK,
+    });
+  }
+
+  @Patch(':id/interest')
+  @UseGuards(RolesGuard)
+  @Roles(Role.MEMBER)
+  @HttpCode(HttpStatus.CREATED)
+  async interestHiddenGems(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+  ): Promise<WebResponse<{ interest: boolean }>> {
+    const response = await this.eventService.eventInterest(id, user);
+
+    return new WebResponse<{ interest: boolean }>({
+      data: response,
+      message: 'Event interested successfully',
+      statusCode: HttpStatus.CREATED,
     });
   }
 }

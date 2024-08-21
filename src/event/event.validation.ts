@@ -4,7 +4,7 @@ import { eventFilter } from './types';
 const OperationDaySchema = z.object({
   date: z.string().date(),
   open_time: z.string().datetime(),
-  close_time: z.string().datetime(),
+  close_time: z.string().datetime().optional(),
 });
 
 const MulterFileSchema = z.object({

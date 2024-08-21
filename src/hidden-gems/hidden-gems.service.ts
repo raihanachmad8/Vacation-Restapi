@@ -26,6 +26,7 @@ import {
 } from './dto';
 import { HiddenGemsCategories } from 'prisma/seeder/hidden-gems-category.seed';
 import { HiddenGemsCommentModel } from '@src/models/hidden-gems-comment.model';
+import { tr } from '@faker-js/faker';
 
 @Injectable()
 export class HiddenGemsService {
@@ -90,7 +91,6 @@ export class HiddenGemsService {
               price_start: validatedRequest.price_start,
               price_end: validatedRequest.price_end,
               location: validatedRequest.location,
-              rating: validatedRequest.rating,
               description: validatedRequest.description,
               User: {
                 connect: {
@@ -240,7 +240,6 @@ export class HiddenGemsService {
       ...(location ? { location: { contains: location } } : {}),
       ...(price_start ? { price_start: { gte: price_start } } : {}),
       ...(price_end ? { price_end: { lte: price_end } } : {}),
-      ...(rating ? { rating: { gte: rating, lte: rating + 1 } } : {}),
       ...(s
         ? {
             OR: [{ title: { contains: s } }, { description: { contains: s } }],
@@ -264,8 +263,48 @@ export class HiddenGemsService {
         this.prismaService.hiddenGems.count({ where }),
       ]);
 
+      const hiddenGemIds = data.map((hiddenGems) => hiddenGems.hidden_gem_id);
+
+      // Fetch the average ratings for these hidden gems
+      const ratings = await this.prismaService.hiddenGemsRating.groupBy({
+        by: ['hidden_gem_id'],
+        _avg: {
+          rating: true,
+        },
+        where: {
+          hidden_gem_id: {
+            in: hiddenGemIds,
+          },
+        },
+      });
+
+      const filteredRatings = ratings.filter((r) =>
+        rating
+          ? (r._avg.rating || 0) >= rating && (r._avg.rating || 0) <= rating + 1
+          : true,
+      );
+
+      const validHiddenGemIds = new Set(
+        filteredRatings.map((r) => r.hidden_gem_id),
+      );
+
+      // Filter hidden gems data by the valid IDs
+      const filteredHiddenGems = data.filter((hiddenGems) =>
+        validHiddenGemIds.has(hiddenGems.hidden_gem_id),
+      );
+
       return {
-        data: await Promise.all(data.map(HiddenGemsModel.toJson)),
+        data: await Promise.all(
+          filteredHiddenGems.map((hiddenGems) =>
+            HiddenGemsModel.toJson(hiddenGems, {
+              rating:
+                filteredRatings.find(
+                  (r) => r.hidden_gem_id === hiddenGems.hidden_gem_id,
+                )?._avg.rating || 0,
+              marked_user_id: user?.user_id,
+            }),
+          ),
+        ),
         paging: {
           current_page: page || 1,
           first_page: 1,
@@ -294,6 +333,7 @@ export class HiddenGemsService {
         HiddenGemsCategory: true,
         HiddenGemsComment: {
           include: {
+            HiddenGemsRating: true,
             User: true,
             HiddenGemsReply: {
               include: {
@@ -313,16 +353,29 @@ export class HiddenGemsService {
     if (!hiddenGems) {
       throw new NotFoundException('Hidden gems not found');
     }
-    console.log('hiddenGems', hiddenGems);
 
     if (
       hiddenGems.status !== Status.APPROVE &&
-      hiddenGems.User.user_id !== user?.user_id
+      hiddenGems.User.user_id !== user?.user_id &&
+      user?.role !== Role.ADMIN
     ) {
       throw new NotFoundException('Hidden gems not found');
     }
 
-    return HiddenGemsModel.toJson(hiddenGems);
+    const ratings = await this.prismaService.hiddenGemsRating.groupBy({
+      by: ['hidden_gem_id'],
+      _avg: {
+        rating: true,
+      },
+      where: {
+        hidden_gem_id,
+      },
+    });
+
+    return HiddenGemsModel.toJson(hiddenGems, {
+      rating: ratings[0]?._avg.rating || 0,
+      marked_user_id: user?.user_id,
+    });
   }
 
   async updateHiddenGems(
@@ -391,7 +444,6 @@ export class HiddenGemsService {
               price_start: validatedRequest.price_start,
               price_end: validatedRequest.price_end,
               location: validatedRequest.location,
-              rating: validatedRequest.rating,
               description: validatedRequest.description,
               status: hiddenGemsStatus,
               OperatingDaysAndHours: {
@@ -615,7 +667,6 @@ export class HiddenGemsService {
           const comment = await prisma.hiddenGemsComment.create({
             data: {
               comment: validatedRequest.comment,
-              rating: validatedRequest.rating,
               User: {
                 connect: {
                   user_id: validatedRequest.user_id,
@@ -624,6 +675,29 @@ export class HiddenGemsService {
               HiddenGems: {
                 connect: {
                   hidden_gem_id: validatedRequest.hidden_gems_id,
+                },
+              },
+              HiddenGemsRating: {
+                create: {
+                  rating: validatedRequest.rating,
+                  HiddenGems: {
+                    connect: {
+                      hidden_gem_id: validatedRequest.hidden_gems_id,
+                    },
+                  },
+                  User: {
+                    connect: {
+                      user_id: validatedRequest.user_id,
+                    },
+                  },
+                },
+              },
+            },
+            include: {
+              User: true,
+              HiddenGemsRating: {
+                where: {
+                  user_id: validatedRequest.user_id,
                 },
               },
             },
@@ -673,7 +747,6 @@ export class HiddenGemsService {
           const replies = await prisma.hiddenGemsReply.create({
             data: {
               comment: validatedRequest.comment,
-              rating: validatedRequest.rating,
               User: {
                 connect: {
                   user_id: validatedRequest.user_id,
@@ -733,7 +806,6 @@ export class HiddenGemsService {
           const replies = await prisma.hiddenGemsReply.create({
             data: {
               comment: validatedRequest.comment,
-              rating: validatedRequest.rating,
               ParentReply: {
                 connect: {
                   reply_id: validatedRequest.parent_id,

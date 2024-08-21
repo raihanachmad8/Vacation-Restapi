@@ -29,7 +29,6 @@ export class Event extends ContractSeeder {
           Status.REJECT,
           Status.REVISION,
         ]),
-        rating: faker.number.float({ min: 0, max: 5 }),
         user_id: faker.helpers.arrayElement(users).user_id,
         category_id: faker.helpers.arrayElement(categories).category_id,
         location: faker.location.city(),
@@ -45,7 +44,6 @@ export class Event extends ContractSeeder {
             price_start: Event.price_start,
             price_end: Event.price_end,
             status: Event.status,
-            rating: Event.rating,
             User: {
               connect: { user_id: Event.user_id },
             },

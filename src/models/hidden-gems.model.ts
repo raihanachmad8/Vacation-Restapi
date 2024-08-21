@@ -9,7 +9,8 @@ export class HiddenGemsModel {
   price_start: number;
   price_end: number;
   location: string;
-  rating: number;
+  rating: number = 0;
+  isRated: boolean = false;
   category: any;
   status: string;
   description: string;
@@ -20,14 +21,20 @@ export class HiddenGemsModel {
   created_at: Date;
   updated_at: Date;
 
-  static async toJson(partial: Partial<any>) {
+  static async toJson(
+    partial: Partial<any>,
+    options?: {
+      marked_user_id?: string;
+      rating?: number;
+    },
+  ) {
     const hiddenGems = new HiddenGemsModel();
     partial.hidden_gem_id && (hiddenGems.hidden_gem_id = partial.hidden_gem_id);
     partial.title && (hiddenGems.title = partial.title);
     partial.price_start && (hiddenGems.price_start = partial.price_start);
     partial.price_end && (hiddenGems.price_end = partial.price_end);
     partial.location && (hiddenGems.location = partial.location);
-    partial.rating && (hiddenGems.rating = partial.rating);
+    options?.rating && (hiddenGems.rating = options.rating);
     partial.HiddenGemsCategory &&
       (hiddenGems.category = partial.HiddenGemsCategory);
     partial.status && (hiddenGems.status = partial.status);
@@ -48,6 +55,12 @@ export class HiddenGemsModel {
     partial.OperatingDaysAndHours &&
       (hiddenGems.operation_days = partial.OperatingDaysAndHours);
     partial.created_at && (hiddenGems.created_at = partial.created_at);
+
+    if (options.marked_user_id) {
+      hiddenGems.isRated = partial.HiddenGemsRating.some(
+        (rating: any) => rating.user_id === options.marked_user_id,
+      );
+    }
 
     return hiddenGems;
   }

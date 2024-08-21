@@ -79,7 +79,6 @@ export class EventService {
               price_start: validatedRequest.price_start,
               price_end: validatedRequest.price_end,
               location: validatedRequest.location,
-              rating: validatedRequest.rating,
               description: validatedRequest.description,
               User: {
                 connect: {
@@ -161,7 +160,6 @@ export class EventService {
       location,
       price_start,
       price_end,
-      rating,
       s,
       limit = 10,
       page = 1,
@@ -216,7 +214,6 @@ export class EventService {
       ...(location ? { location: { contains: location } } : {}),
       ...(price_start ? { price_start: { gte: price_start } } : {}),
       ...(price_end ? { price_end: { lte: price_end } } : {}),
-      ...(rating ? { rating: { gte: rating, lte: rating + 1 } } : {}),
       ...(s
         ? {
             OR: [{ title: { contains: s } }, { description: { contains: s } }],
@@ -232,6 +229,7 @@ export class EventService {
             EventCategory: true,
             User: true,
             Photos: true,
+            EventInterest: true,
           },
           orderBy: orderConfig,
           skip,
@@ -241,7 +239,11 @@ export class EventService {
       ]);
 
       return {
-        data: await Promise.all(data.map(EventModel.toJson)),
+        data: await Promise.all(
+          data.map((event) =>
+            EventModel.toJson(event, { marked_user_id: user?.user_id }),
+          ),
+        ),
         paging: {
           current_page: page || 1,
           first_page: 1,
@@ -267,6 +269,7 @@ export class EventService {
         Photos: true,
         User: true,
         EventCategory: true,
+        EventInterest: true,
       },
     });
 
@@ -276,12 +279,13 @@ export class EventService {
 
     if (
       event.status !== Status.APPROVE &&
-      event.User.user_id !== user?.user_id
+      event.User.user_id !== user?.user_id &&
+      user?.role !== Role.ADMIN
     ) {
       throw new NotFoundException('Event not found');
     }
 
-    return EventModel.toJson(event);
+    return EventModel.toJson(event, { marked_user_id: user?.user_id });
   }
 
   async updateEvent(
@@ -346,7 +350,6 @@ export class EventService {
               price_start: validatedRequest.price_start,
               price_end: validatedRequest.price_end,
               location: validatedRequest.location,
-              rating: validatedRequest.rating,
               description: validatedRequest.description,
               status: eventStatus,
               EventOperatingDaysAndHours: {
@@ -356,6 +359,7 @@ export class EventService {
             },
             include: {
               EventCategory: true,
+              EventInterest: true,
               EventOperatingDaysAndHours: true,
               User: true,
               Photos: true,
@@ -406,7 +410,7 @@ export class EventService {
         },
       );
 
-      return EventModel.toJson(transaction);
+      return EventModel.toJson(transaction, { marked_user_id: user.user_id });
     } catch (error) {
       await Promise.all(
         newPhotos.map(async (photo) => {
@@ -511,6 +515,7 @@ export class EventService {
             },
             include: {
               EventCategory: true,
+              EventInterest: true,
               EventOperatingDaysAndHours: true,
               User: true,
               Photos: true,
@@ -521,11 +526,48 @@ export class EventService {
         },
       );
 
-      return await EventModel.toJson(transaction);
+      return await EventModel.toJson(transaction, {
+        marked_user_id: user.user_id,
+      });
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating event status: ${error.message}`,
       );
+    }
+  }
+
+  async eventInterest(
+    event_id: string,
+    user: User,
+  ): Promise<{ interest: boolean }> {
+    const event = await this.prismaService.event.findUnique({
+      where: {
+        event_id,
+        user_id: user.user_id,
+      },
+    });
+
+    if (!event) {
+      await this.prismaService.event.update({
+        where: {
+          event_id,
+        },
+        data: {
+          event_id: event_id,
+          user_id: user.user_id,
+        },
+      });
+
+      return { interest: true };
+    } else {
+      await this.prismaService.event.delete({
+        where: {
+          event_id,
+          user_id: user.user_id,
+        },
+      });
+
+      return { interest: false };
     }
   }
 }

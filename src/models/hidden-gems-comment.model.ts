@@ -7,11 +7,18 @@ export class HiddenGemsCommentModel {
   hidden_gems_id: string;
   rating: number;
   user: UserModel;
+  // user_rating: number;
   replies?: HiddenGemsCommentRepliesModel[];
   created_at: Date;
   updated_at: Date;
 
   static async toJson(partial: Partial<any>): Promise<HiddenGemsCommentModel> {
+    console.log(partial.HiddenGemsRating);
+    partial.HiddenGemsRating &&
+      (partial.rating =
+        partial.HiddenGemsRating.find(
+          (rating: any) => rating.comment_id === partial.comment_id,
+        ).rating || 0);
     const comment = new HiddenGemsCommentModel();
     const childReplies = partial.HiddenGemsReply?.ChildReplies
       ? await Promise.all(
@@ -28,7 +35,6 @@ export class HiddenGemsCommentModel {
           ),
         )
       : [];
-
     partial.comment_id && (comment.comment_id = partial.comment_id);
     partial.comment && (comment.comment = partial.comment);
     partial.hidden_gems_id && (comment.hidden_gems_id = partial.hidden_gems_id);

@@ -53,7 +53,6 @@ export class HiddenGemsController {
       ...createHiddenGemsRequest,
       price_start: Number(createHiddenGemsRequest.price_start),
       price_end: Number(createHiddenGemsRequest.price_end),
-      rating: Number(createHiddenGemsRequest.rating),
       photos: photos,
       user_id: user.user_id,
     };
@@ -74,6 +73,8 @@ export class HiddenGemsController {
         : undefined,
       price_end: request?.price_end ? Number(request.price_end) : undefined,
       rating: request?.rating ? Number(request.rating) : undefined,
+      limit: request?.limit ? Number(request.limit) : undefined,
+      page: request?.page ? Number(request.page) : undefined,
     };
     const response = await this.hiddenGemsService.search(ConvertRequest, user);
 
@@ -117,7 +118,6 @@ export class HiddenGemsController {
       hidden_gems_id: id,
       price_start: Number(request.price_start),
       price_end: Number(request.price_end),
-      rating: Number(request.rating),
       photos: photos,
       user_id: user.user_id,
     };
@@ -266,13 +266,12 @@ export class HiddenGemsController {
     @CurrentUser() user: User,
     @Param('id') id: string,
     @Param('comment_id') comment_id: string,
-    @Body() request: { comment: string; rating: number },
+    @Body() request: { comment: string },
   ): Promise<WebResponse<HiddenGemsCommentRepliesModel>> {
     const ConvertRequest = {
       ...request,
       user_id: user.user_id,
       hidden_gems_id: id,
-      rating: Number(request.rating),
       comment_id: comment_id,
     };
     const response =
@@ -294,14 +293,13 @@ export class HiddenGemsController {
     @Param('id') id: string,
     @Param('comment_id') comment_id: string,
     @Param('reply_id') reply_id: string,
-    @Body() request: { comment: string; rating: number },
+    @Body() request: { comment: string },
   ): Promise<WebResponse<HiddenGemsCommentRepliesModel>> {
     const ConvertRequest = {
       ...request,
       user_id: user.user_id,
       hidden_gems_id: id,
       comment_id: comment_id,
-      rating: Number(request.rating),
       parent_id: reply_id,
     };
     const response =

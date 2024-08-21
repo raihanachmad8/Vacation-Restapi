@@ -19,7 +19,6 @@ export class HiddenGemsCommentsRepliesReply extends ContractSeeder {
         comment_id: faker.helpers.arrayElement(hiddenGemsComments).comment_id,
         comment: faker.lorem.sentence(),
         user_id: faker.helpers.arrayElement(users).user_id,
-        rating: faker.number.float({ min: 0, max: 5 }),
       };
     });
 
@@ -28,7 +27,6 @@ export class HiddenGemsCommentsRepliesReply extends ContractSeeder {
         await prisma.hiddenGemsReply.create({
           data: {
             comment: HiddenGemsCommentReply.comment,
-            rating: HiddenGemsCommentReply.rating,
             User: {
               connect: { user_id: HiddenGemsCommentReply.user_id },
             },

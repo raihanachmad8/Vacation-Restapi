@@ -45,7 +45,6 @@ export class HiddenGems extends ContractSeeder {
             price_start: HiddenGem.price_start,
             price_end: HiddenGem.price_end,
             status: HiddenGem.status,
-            rating: HiddenGem.rating,
             User: {
               connect: { user_id: HiddenGem.user_id },
             },

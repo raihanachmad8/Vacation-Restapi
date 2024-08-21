@@ -132,7 +132,6 @@ export class HiddenGemsValidation {
       comment_id: z.string().uuid(),
       parent_id: z.string().uuid().optional(),
       comment: z.string().min(3),
-      rating: z.number().int().min(0).max(5),
       user_id: z.string().uuid(),
     }) as ZodType<HiddenGemsCommentRepliesRequest>;
 }
