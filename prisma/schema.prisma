@@ -254,7 +254,7 @@ model HiddenGemsRating {
   HiddenGems HiddenGems        @relation(fields: [hidden_gem_id], references: [hidden_gem_id], onDelete: Cascade, onUpdate: NoAction)
   Comment    HiddenGemsComment @relation(fields: [comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([hidden_gem_id, comment_id, user_id])
+  @@id([hidden_gem_id, user_id])
   @@map("hidden_gems_ratings")
 }
 
@@ -296,6 +296,7 @@ model HiddenGemsComment {
   HiddenGemsReply  HiddenGemsReply[]
   HiddenGemsRating HiddenGemsRating[]
 
+  @@unique([hidden_gem_id, user_id])
   @@map("hidden_gems_comments")
 }
 

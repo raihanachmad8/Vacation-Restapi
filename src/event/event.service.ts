@@ -14,7 +14,13 @@ import {
   uploadFile,
 } from '@src/common/utils';
 import { FileStorageOptions } from '@src/file-storage/types';
-import { FileVisibility, Role, Status, User } from '@prisma/client';
+import {
+  EventCategory,
+  FileVisibility,
+  Role,
+  Status,
+  User,
+} from '@prisma/client';
 import { EventModel } from '@src/models';
 import { eventFilter } from './types';
 import { Paging } from '@src/models';
@@ -29,7 +35,7 @@ export class EventService {
     private validationService: ValidationService,
   ) {}
 
-  async getCategories(search?: string): Promise<string[]> {
+  async getCategories(search?: string): Promise<EventCategory[]> {
     const where = search
       ? {
           category_name: {
@@ -40,12 +46,9 @@ export class EventService {
 
     const categories = await this.prismaService.eventCategory.findMany({
       where,
-      select: {
-        category_name: true,
-      },
     });
 
-    return categories.map((category) => category.category_name);
+    return categories;
   }
 
   async createEvent(request: CreateEventRequest): Promise<EventModel> {
@@ -131,13 +134,15 @@ export class EventService {
         },
       );
 
-      return EventModel.toJson(transaction);
+      return await EventModel.toJson(transaction);
     } catch (error) {
       await Promise.all(
         validatedRequest.photos.map(async (photo) => {
           await deleteFile(photo.filename, this.eventStorageConfig);
         }),
       );
+
+      throw new InternalServerErrorException('Failed to create event');
     }
   }
 

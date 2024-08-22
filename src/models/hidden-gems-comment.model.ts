@@ -6,20 +6,34 @@ export class HiddenGemsCommentModel {
   comment: string;
   hidden_gems_id: string;
   rating: number;
+  isRated: boolean;
   user: UserModel;
-  // user_rating: number;
   replies?: HiddenGemsCommentRepliesModel[];
   created_at: Date;
   updated_at: Date;
 
-  static async toJson(partial: Partial<any>): Promise<HiddenGemsCommentModel> {
-    console.log(partial.HiddenGemsRating);
+  static async toJson(
+    partial: Partial<any>,
+    options: {
+      marked_user_id?: string;
+    },
+  ): Promise<HiddenGemsCommentModel> {
+    const comment = new HiddenGemsCommentModel();
+    if (options?.marked_user_id) {
+      (partial.HiddenGemsRating &&
+        (comment.isRated = !!partial.HiddenGemsRating.some(
+          (rating: any) =>
+            rating.comment_id === partial.comment_id &&
+            rating.user_id === options.marked_user_id,
+        ))) ||
+        false;
+    }
+
     partial.HiddenGemsRating &&
       (partial.rating =
         partial.HiddenGemsRating.find(
           (rating: any) => rating.comment_id === partial.comment_id,
         ).rating || 0);
-    const comment = new HiddenGemsCommentModel();
     const childReplies = partial.HiddenGemsReply?.ChildReplies
       ? await Promise.all(
           partial.HiddenGemsReply.ChildReplies.map((r: any) =>

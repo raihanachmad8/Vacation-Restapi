@@ -2,7 +2,7 @@ import { z, ZodType } from 'zod';
 import { CreateEventRequest, UpdateEventRequest } from './dto';
 import { eventFilter } from './types';
 const OperationDaySchema = z.object({
-  date: z.string().date(),
+  date: z.string().datetime(),
   open_time: z.string().datetime(),
   close_time: z.string().datetime().optional(),
 });

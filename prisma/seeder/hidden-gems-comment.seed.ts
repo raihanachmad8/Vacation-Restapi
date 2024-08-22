@@ -10,27 +10,47 @@ export class HiddenGemsComments extends ContractSeeder {
 
     const hiddenGems = await prisma.hiddenGems.findMany();
 
-    const HiddenGemsComments = Array.from({ length: 40 }, () => {
-      return {
-        comment: faker.lorem.sentence(),
-        user_id: faker.helpers.arrayElement(users).user_id,
-        hidden_gem_id: faker.helpers.arrayElement(hiddenGems).hidden_gem_id,
-      };
-    });
+    const hiddenGemsComments = [];
+
+    for (const hiddenGem of hiddenGems) {
+      const numberOfUsers = faker.number.int({ min: 3, max: users.length });
+      const selectedUsers = faker.helpers
+        .shuffle(users)
+        .slice(0, numberOfUsers);
+
+      for (const user of selectedUsers) {
+        hiddenGemsComments.push({
+          comment: faker.lorem.sentence(),
+          user_id: user.user_id,
+          hidden_gem_id: hiddenGem.hidden_gem_id,
+        });
+      }
+    }
 
     await Promise.all(
-      HiddenGemsComments.map(async (HiddenGemsComment) => {
-        await prisma.hiddenGemsComment.create({
-          data: {
-            comment: HiddenGemsComment.comment,
-            User: {
-              connect: { user_id: HiddenGemsComment.user_id },
+      hiddenGemsComments.map(async (comment) => {
+        try {
+          await prisma.hiddenGemsComment.create({
+            data: {
+              comment: comment.comment,
+              User: {
+                connect: { user_id: comment.user_id },
+              },
+              HiddenGems: {
+                connect: { hidden_gem_id: comment.hidden_gem_id },
+              },
             },
-            HiddenGems: {
-              connect: { hidden_gem_id: HiddenGemsComment.hidden_gem_id },
-            },
-          },
-        });
+          });
+        } catch (error) {
+          if (error.code === 'P2002') {
+            // Log or handle duplicate key errors
+            console.error(
+              `Duplicate entry for hidden_gem_id: ${comment.hidden_gem_id}, user_id: ${comment.user_id}`,
+            );
+          } else {
+            throw error;
+          }
+        }
       }),
     );
 

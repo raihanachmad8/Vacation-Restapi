@@ -132,7 +132,6 @@ export class BoardController {
       }),
       user_id: user.user_id,
     };
-    console.log(ConvertRequest);
 
     const card = await this.boardService.createCard(ConvertRequest);
     return new WebResponse<KanbanCardModel>({
@@ -308,7 +307,6 @@ export class BoardController {
     @Param('board_id') board_id: string,
     @Param('hashed') hashed: string,
   ): Promise<WebResponse<KanbanTeamModel>> {
-    console.log(user, board_id, hashed);
     const ConvertRequest = {
       board_id,
       hashed,

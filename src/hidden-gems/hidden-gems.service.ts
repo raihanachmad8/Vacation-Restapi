@@ -319,7 +319,7 @@ export class HiddenGemsService {
 
   async getHiddenGemsById(
     hidden_gem_id: string,
-    user: User,
+    user?: User,
   ): Promise<HiddenGemsModel> {
     const hiddenGems = await this.prismaService.hiddenGems.findUnique({
       where: {
@@ -330,6 +330,7 @@ export class HiddenGemsService {
         User: true,
         OperatingDaysAndHours: true,
         HiddenGemsCategory: true,
+        HiddenGemsRating: true,
         HiddenGemsComment: {
           include: {
             HiddenGemsRating: true,
@@ -361,18 +362,13 @@ export class HiddenGemsService {
       throw new NotFoundException('Hidden gems not found');
     }
 
-    const ratings = await this.prismaService.hiddenGemsRating.groupBy({
-      by: ['hidden_gem_id'],
-      _avg: {
-        rating: true,
-      },
-      where: {
-        hidden_gem_id,
-      },
-    });
-
+    let rating = 0;
+    hiddenGems.HiddenGemsRating &&
+      (rating =
+        hiddenGems.HiddenGemsRating.find((r) => r.user_id === user?.user_id)
+          ?.rating || 0);
     return HiddenGemsModel.toJson(hiddenGems, {
-      rating: ratings[0]?._avg.rating || 0,
+      rating,
       marked_user_id: user?.user_id,
     });
   }
@@ -640,10 +636,11 @@ export class HiddenGemsService {
       request,
     );
 
+    const { hidden_gems_id, user_id, comment, rating } = validatedRequest;
+
+    // Fetch hidden gems and user
     const hiddenGems = await this.prismaService.hiddenGems.findUnique({
-      where: {
-        hidden_gem_id: validatedRequest.hidden_gems_id,
-      },
+      where: { hidden_gem_id: hidden_gems_id },
     });
 
     if (!hiddenGems) {
@@ -651,9 +648,7 @@ export class HiddenGemsService {
     }
 
     const user = await this.prismaService.user.findUnique({
-      where: {
-        user_id: validatedRequest.user_id,
-      },
+      where: { user_id },
     });
 
     if (!user) {
@@ -661,52 +656,57 @@ export class HiddenGemsService {
     }
 
     try {
-      const transaction = await this.prismaService.$transaction(
-        async (prisma) => {
-          const comment = await prisma.hiddenGemsComment.create({
-            data: {
-              comment: validatedRequest.comment,
-              User: {
-                connect: {
-                  user_id: validatedRequest.user_id,
-                },
-              },
-              HiddenGems: {
-                connect: {
-                  hidden_gem_id: validatedRequest.hidden_gems_id,
-                },
-              },
-              HiddenGemsRating: {
-                create: {
-                  rating: validatedRequest.rating,
-                  HiddenGems: {
-                    connect: {
-                      hidden_gem_id: validatedRequest.hidden_gems_id,
-                    },
-                  },
-                  User: {
-                    connect: {
-                      user_id: validatedRequest.user_id,
-                    },
-                  },
-                },
-              },
-            },
-            include: {
-              User: true,
-              HiddenGemsRating: {
-                where: {
-                  user_id: validatedRequest.user_id,
-                },
-              },
-            },
-          });
-
-          return comment;
+      const commentResult = await this.prismaService.hiddenGemsComment.upsert({
+        where: {
+          hidden_gem_id_user_id: {
+            hidden_gem_id: hidden_gems_id,
+            user_id,
+          },
         },
-      );
+        update: {
+          comment,
+          HiddenGemsRating: {
+            upsert: {
+              where: {
+                hidden_gem_id_user_id: {
+                  hidden_gem_id: hidden_gems_id,
+                  user_id,
+                },
+              },
+              create: {
+                rating,
+                HiddenGems: { connect: { hidden_gem_id: hidden_gems_id } },
+                User: { connect: { user_id } },
+              },
+              update: {
+                rating,
+              },
+            },
+          },
+        },
+        create: {
+          comment,
+          HiddenGems: { connect: { hidden_gem_id: hidden_gems_id } },
+          User: { connect: { user_id } },
+          HiddenGemsRating: {
+            create: {
+              rating,
+              HiddenGems: { connect: { hidden_gem_id: hidden_gems_id } },
+              User: { connect: { user_id } },
+            },
+          },
+        },
+        include: {
+          User: true,
+          HiddenGemsRating: {
+            where: { user_id },
+          },
+        },
+      });
 
-      return HiddenGemsCommentModel.toJson(transaction);
+      return HiddenGemsCommentModel.toJson(commentResult, {
+        marked_user_id: user.user_id,
+      });
     } catch (error) {
       throw new InternalServerErrorException('Failed to comment hidden gems');
     }

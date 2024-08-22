@@ -17,7 +17,9 @@ CREATE TABLE `hidden_gems_comments` (
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
-    PRIMARY KEY (`comment_id`)
+    PRIMARY KEY (`comment_id`),
+    UNIQUE INDEX `hidden_gems_comments_hidden_gem_id_user_id_key` (`hidden_gem_id`, `user_id`)
+
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable

@@ -18,7 +18,7 @@ import { Public } from '@src/common/decorators';
 import { EventModel, WebResponse } from '@src/models';
 import { RolesGuard } from '@src/common/guards/roles.guard';
 import { Roles } from '@src/common/decorators/role.decorator';
-import { Role, User } from '@prisma/client';
+import { EventCategory, Role, User } from '@prisma/client';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '@src/common/decorators/current-user.decorator';
 import { CreateEventRequest, UpdateEventRequest } from './dto';
@@ -33,9 +33,9 @@ export class EventController {
   @HttpCode(HttpStatus.OK)
   async getCategories(
     @Query('s') search?: string,
-  ): Promise<WebResponse<string[]>> {
+  ): Promise<WebResponse<EventCategory[]>> {
     const categories = await this.eventService.getCategories(search);
-    return new WebResponse<string[]>({
+    return new WebResponse<EventCategory[]>({
       message: 'Tags retrieved successfully',
       statusCode: HttpStatus.OK,
       data: categories,
@@ -51,7 +51,7 @@ export class EventController {
     @CurrentUser() user: User,
     @Body() request: CreateEventRequest,
     @UploadedFiles() photos: Express.Multer.File[],
-  ) {
+  ): Promise<WebResponse<EventModel>> {
     const ConvertRequest = {
       ...request,
       price_start: Number(request.price_start),
@@ -60,7 +60,12 @@ export class EventController {
       photos: photos,
       user_id: user.user_id,
     };
-    return this.eventService.createEvent(ConvertRequest);
+    const response = await this.eventService.createEvent(ConvertRequest);
+    return new WebResponse<EventModel>({
+      message: 'Event created successfully',
+      statusCode: HttpStatus.CREATED,
+      data: response,
+    });
   }
 
   @Public()
