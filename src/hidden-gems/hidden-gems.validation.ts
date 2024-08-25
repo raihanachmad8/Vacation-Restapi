@@ -43,7 +43,6 @@ export class HiddenGemsValidation {
       price_start: z.number().int().min(0),
       price_end: z.number().int().min(0),
       location: z.string().min(3),
-      rating: z.number().int().min(0).max(5),
       category_id: z.string().uuid(), // Category ID should be a string UUID
       operation_days: z
         .array(OperationDaySchema)

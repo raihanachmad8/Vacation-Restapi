@@ -141,12 +141,15 @@ export class HiddenGemsService {
               OperatingDaysAndHours: true,
               User: true,
               Photos: true,
+              HiddenGemsRating: true,
             },
           });
         },
       );
 
-      return HiddenGemsModel.toJson(transaction);
+      return HiddenGemsModel.toJson(transaction, {
+        marked_user_id: validatedRequest.user_id,
+      });
     } catch (error) {
       await Promise.all(
         validatedRequest.photos.map(async (photo) => {

@@ -44,7 +44,6 @@ CREATE TABLE `event_operating_days_and_hours` (
     `date` DATE NOT NULL,
     `open_time` DATETIME NOT NULL,
     `close_time` DATETIME NULL,
-    
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
 
