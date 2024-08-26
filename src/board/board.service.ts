@@ -92,7 +92,12 @@ export class BoardService {
     const { cover, title, user_id } = ValidatedRequest;
     try {
       const board = await this.prismaService.$transaction(async (prisma) => {
-        coverFileName = await uploadFile(cover, this.kanbanBoardStorageConfig);
+        if (cover?.filename) {
+          coverFileName = await uploadFile(
+            cover,
+            this.kanbanBoardStorageConfig,
+          );
+        }
         return prisma.kanbanBoard.create({
           data: {
             title,
@@ -101,6 +106,19 @@ export class BoardService {
                 user_id: user_id,
               },
             },
+            ...(coverFileName && {
+              Cover: {
+                create: {
+                  filename: coverFileName,
+                  visibility: FileVisibility.PUBLIC,
+                  User: {
+                    connect: {
+                      user_id,
+                    },
+                  },
+                },
+              },
+            }),
             KanbanTeam: {
               create: {
                 User: {
@@ -293,6 +311,7 @@ export class BoardService {
       status,
       tasklist,
       members,
+      user_id,
     } = ValidatedRequest;
     const board = await this.prismaService.kanbanBoard.findUnique({
       where: {
@@ -307,20 +326,39 @@ export class BoardService {
 
     try {
       const card = await this.prismaService.$transaction(async (prisma) => {
-        coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
+        if (cover?.filename) {
+          coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
+        }
         return prisma.kanbanCard.create({
           data: {
             title,
             description,
             priority,
             status,
+            ...(coverFileName && {
+              Cover: {
+                create: {
+                  filename: coverFileName,
+                  visibility: FileVisibility.PUBLIC,
+                  User: {
+                    connect: {
+                      user_id,
+                    },
+                  },
+                },
+              },
+            }),
             KanbanTaskList: {
               create: tasklist,
             },
             KanbanMember: {
               create: members,
             },
-            board_id,
+            KanbanBoard: {
+              connect: {
+                board_id,
+              },
+            },
           },
           include: {
             KanbanTaskList: true,
@@ -481,7 +519,7 @@ export class BoardService {
           team_id: id,
         }));
 
-      if (cover.filename && cover.filename !== existingCard.Cover.filename) {
+      if (cover?.filename && cover.filename !== existingCard.Cover.filename) {
         coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
       }
 
