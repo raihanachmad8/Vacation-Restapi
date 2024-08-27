@@ -519,7 +519,7 @@ export class BoardService {
           team_id: id,
         }));
 
-      if (cover?.filename && cover.filename !== existingCard.Cover.filename) {
+      if (cover?.filename && cover?.filename !== existingCard.Cover.filename) {
         coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
       }
 
@@ -550,7 +550,7 @@ export class BoardService {
               : undefined,
             delete: !coverFileName
               ? {
-                  filename: existingCard.Cover.filename,
+                  filename: existingCard.Cover?.filename,
                 }
               : undefined,
           },
