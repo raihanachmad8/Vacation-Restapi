@@ -6,7 +6,7 @@ import { kanbanCardStorageConfig } from '@root/config/storage.config';
 export class KanbanCardModel {
   card_id: string;
   board_id: string;
-  cover: string | null;
+  cover: string = '';
   title: string;
   description: string;
   status: KanbanStatus;

@@ -92,7 +92,7 @@ export class BoardService {
     const { cover, title, user_id } = ValidatedRequest;
     try {
       const board = await this.prismaService.$transaction(async (prisma) => {
-        if (cover?.filename) {
+        if (cover) {
           coverFileName = await uploadFile(
             cover,
             this.kanbanBoardStorageConfig,
@@ -326,7 +326,7 @@ export class BoardService {
 
     try {
       const card = await this.prismaService.$transaction(async (prisma) => {
-        if (cover?.filename) {
+        if (cover) {
           coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
         }
         return prisma.kanbanCard.create({
@@ -414,8 +414,6 @@ export class BoardService {
       },
     });
 
-    console.log(card);
-
     if (!card) {
       throw new NotFoundException('Card not found');
     }
@@ -438,6 +436,7 @@ export class BoardService {
       status,
       tasklist = [],
       members = [],
+      user_id,
     } = ValidatedRequest;
 
     let coverFileName: string;
@@ -514,12 +513,12 @@ export class BoardService {
         }));
 
       const membersToDelete = existingMemberIds
-        .filter((id) => !newMemberIds.includes(id)) // Members to delete (existing but not in new list)
+        .filter((id) => !newMemberIds.includes(id))
         .map((id) => ({
           team_id: id,
         }));
 
-      if (cover?.filename && cover?.filename !== existingCard.Cover.filename) {
+      if (cover) {
         coverFileName = await uploadFile(cover, this.kanbanCardStorageConfig);
       }
 
@@ -541,19 +540,23 @@ export class BoardService {
             create: tasksToCreate,
             updateMany: tasksToUpdate,
           },
-          Cover: {
-            update: coverFileName
-              ? {
+          Cover: coverFileName
+            ? {
+                create: {
                   filename: coverFileName,
                   visibility: FileVisibility.PUBLIC,
-                }
-              : undefined,
-            delete: !coverFileName
-              ? {
-                  filename: existingCard.Cover?.filename,
-                }
-              : undefined,
-          },
+                  User: {
+                    connect: {
+                      user_id: user_id,
+                    },
+                  },
+                },
+              }
+            : {
+                delete: existingCard.Cover
+                  ? { filename: existingCard.Cover.filename }
+                  : undefined,
+              },
           KanbanMember: {
             deleteMany: {
               team_id: {
@@ -564,7 +567,6 @@ export class BoardService {
             updateMany: membersToUpdate,
           },
         },
-
         include: {
           Cover: true,
           KanbanTaskList: true,
@@ -582,16 +584,19 @@ export class BoardService {
 
       return await KanbanCardModel.toJson(card);
     } catch (error) {
-      try {
-        const deleteMessage = await deleteFile(
-          coverFileName,
-          this.kanbanCardStorageConfig,
-        );
-        console.error(deleteMessage);
-      } catch (error) {
-        console.error(error.message);
+      if (coverFileName) {
+        try {
+          const deleteMessage = await deleteFile(
+            coverFileName,
+            this.kanbanCardStorageConfig,
+          );
+          console.error(deleteMessage);
+        } catch (error) {
+          console.error('Error deleting file:', error.message);
+        }
       }
-      console.log(error);
+      console.error('Error updating card:', error);
+      throw error;
     }
   }
 
@@ -600,7 +605,7 @@ export class BoardService {
       BoardValidation.UPDATE_BOARD_REQUEST,
       request,
     );
-    const { cover, board_id, title } = ValidatedRequest;
+    const { cover, board_id, title, user_id } = ValidatedRequest;
 
     const board = await this.prismaService.kanbanBoard.findUnique({
       where: {
@@ -618,9 +623,11 @@ export class BoardService {
     try {
       const boardUpdate = await this.prismaService.$transaction(
         async (prisma) => {
-          coverFileName = cover
-            ? await uploadFile(cover, this.kanbanBoardStorageConfig)
-            : null;
+          if (cover) {
+            coverFileName = cover
+              ? await uploadFile(cover, this.kanbanBoardStorageConfig)
+              : null;
+          }
 
           return prisma.kanbanBoard.update({
             where: {
@@ -628,19 +635,23 @@ export class BoardService {
             },
             data: {
               title,
-              Cover: {
-                update: coverFileName
-                  ? {
+              Cover: coverFileName
+                ? {
+                    create: {
                       filename: coverFileName,
                       visibility: FileVisibility.PUBLIC,
-                    }
-                  : undefined,
-                delete: !coverFileName
-                  ? {
-                      filename: board.Cover.filename,
-                    }
-                  : undefined,
-              },
+                      User: {
+                        connect: {
+                          user_id: user_id,
+                        },
+                      },
+                    },
+                  }
+                : {
+                    delete: board.Cover
+                      ? { filename: board.Cover.filename }
+                      : undefined,
+                  },
             },
             include: {
               User: true,
