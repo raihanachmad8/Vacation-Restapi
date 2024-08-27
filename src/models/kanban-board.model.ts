@@ -11,7 +11,7 @@ export class KanbanBoardModel {
   created_at: Date;
   updated_at: Date;
   team: KanbanTeamModel[];
-  cover: string | null;
+  cover: string = '';
   kanban_card: KanbanCardModel[];
 
   static async toJson(partial: Partial<any>): Promise<KanbanBoardModel> {
