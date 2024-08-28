@@ -4,41 +4,47 @@ import { faker } from '@faker-js/faker';
 
 export class KanbanBoardTeamSeeder extends ContractSeeder {
   static async seed(prisma: PrismaClient): Promise<void> {
-    const board = await prisma.kanbanBoard.findMany();
-    const user = await prisma.user.findMany();
+    const boards = await prisma.kanbanBoard.findMany();
+    const users = await prisma.user.findMany({
+      where: {
+        role: {
+          not: 'ADMIN',
+        },
+      },
+    });
 
-    const lead = board.map((b) => {
-      return {
-        board_id: b.board_id,
-        user_id: faker.helpers.arrayElement(user).user_id,
-        role: KanbanRole.OWNER,
+    const leads = boards.map((board) => ({
+      board_id: board.board_id,
+      user_id: faker.helpers.arrayElement(users).user_id,
+      role: KanbanRole.OWNER,
+      permission: AccessType.EDIT,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }));
+
+    const boardTeams = boards.flatMap((board) => {
+      const availableUsers = users.filter(
+        (user) =>
+          !leads.some(
+            (lead) =>
+              lead.board_id === board.board_id && lead.user_id === user.user_id,
+          ),
+      );
+
+      return Array.from({
+        length: faker.number.int({ min: 1, max: availableUsers.length }),
+      }).map((item, index) => ({
+        board_id: board.board_id,
+        user_id: availableUsers[index].user_id,
+        role: KanbanRole.MEMBER,
         permission: AccessType.EDIT,
         created_at: new Date(),
         updated_at: new Date(),
-      };
+      }));
     });
 
-    const boardTeam = board.map((b) => {
-      const team = Array.from({
-        length: faker.number.int({ min: 1, max: 5 }),
-      }).map((_, index) => {
-        return {
-          user_id: faker.helpers.arrayElement(user).user_id,
-          board_id: b.board_id,
-          created_at: new Date(),
-          updated_at: new Date(),
-        };
-      });
-      return team;
-    });
-
-    await prisma.kanbanTeam.createMany({
-      data: lead,
-    });
-
-    await prisma.kanbanTeam.createMany({
-      data: boardTeam.flat(),
-    });
+    await prisma.kanbanTeam.createMany({ data: leads });
+    await prisma.kanbanTeam.createMany({ data: boardTeams });
 
     console.log('Kanban Board Team seeded');
   }

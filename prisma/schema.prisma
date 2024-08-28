@@ -432,6 +432,7 @@ model KanbanTeam {
   KanbanBoard  KanbanBoard    @relation(fields: [board_id], references: [board_id], onDelete: Cascade, onUpdate: NoAction)
   KanbanMember KanbanMember[]
 
+  @@unique([board_id, user_id])
   @@map("kanban_teams")
 }
 
