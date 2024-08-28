@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { User } from '@prisma/client';
 import { UpdateUserRequest } from './dto';
 import { UserFilter } from './types';
 import { Public } from '@src/common/decorators';
+import { query } from 'express';
 
 @Controller('user')
 export class UserController {
@@ -58,8 +60,13 @@ export class UserController {
   @Public()
   @Get('search')
   @HttpCode(HttpStatus.OK)
-  async search(@Body() request: UserFilter): Promise<WebResponse<UserModel[]>> {
-    const response = await this.userService.search(request);
+  async search(@Query() query: UserFilter): Promise<WebResponse<UserModel[]>> {
+    const ConvertRequest = {
+      ...query,
+      limit: query?.limit ? Number(query.limit) : undefined,
+      page: query?.page ? Number(query.page) : undefined,
+    };
+    const response = await this.userService.search(ConvertRequest);
     return new WebResponse<UserModel[]>({
       statusCode: HttpStatus.OK,
       message: 'User data retrieved',
