@@ -170,6 +170,11 @@ export class BoardService {
       include: {
         User: true,
         Cover: true,
+        KanbanTeam: {
+          include: {
+            User: true,
+          },
+        },
         KanbanCard: {
           include: {
             KanbanTaskList: true,
