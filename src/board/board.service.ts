@@ -55,20 +55,23 @@ export class BoardService {
       BoardValidation.BOARD_TEAM_FILTER,
       query,
     );
-    const { board_id, username, user_id } = ValidatedRequest;
+    const { board_id, username } = ValidatedRequest;
     const board = await this.prismaService.kanbanTeam.findMany({
       where: {
         board_id,
-        KanbanMember: {
-          some: {
-            KanbanTeam: {
-              User: {
-                user_id,
+        ...(username && {
+          KanbanMember: {
+            some: {
+              KanbanTeam: {
+                User: {
+                  username: {
+                    contains: username,
+                  },
+                },
               },
             },
           },
-        },
-        ...(username ? { User: { username: { contains: username } } } : {}),
+        }),
       },
       include: {
         User: true,
