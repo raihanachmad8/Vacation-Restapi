@@ -59,19 +59,11 @@ export class BoardService {
     const board = await this.prismaService.kanbanTeam.findMany({
       where: {
         board_id,
-        ...(username && {
-          KanbanMember: {
-            some: {
-              KanbanTeam: {
-                User: {
-                  username: {
-                    contains: username,
-                  },
-                },
-              },
-            },
+        User: {
+          username: {
+            startsWith: username,
           },
-        }),
+        },
       },
       include: {
         User: true,
@@ -1085,6 +1077,8 @@ export class BoardService {
       },
       data: {
         role,
+        permission:
+          role === KanbanRole.ADMIN ? AccessType.EDIT : AccessType.VIEW,
       },
       include: {
         User: true,
