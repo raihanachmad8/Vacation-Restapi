@@ -11,6 +11,7 @@ import {
   Put,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
@@ -31,12 +32,15 @@ import { BoardFilter } from './types';
 import { UpdateBoardRequest } from './dto/update.dto';
 import { UpdateCardKanbanRequest } from './dto/update-card.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { KanbanAccessGuard, KanbanAccessOwnershipGuard } from './guards';
+import { KanbanEditAccessGuard } from './guards/kanban-access-edit.guard';
 
 @Controller('board')
 export class BoardController {
   constructor(private boardService: BoardService) {}
 
   @Get(':board_id/team')
+  @UseGuards(KanbanAccessGuard)
   @HttpCode(HttpStatus.OK)
   async getBoardTeamDetail(
     @Param('board_id') board_id: string,
@@ -79,6 +83,7 @@ export class BoardController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard)
   async getBoard(
     @Query() filter: BoardFilter,
     @CurrentUser() user: User,
@@ -93,6 +98,7 @@ export class BoardController {
   }
 
   @Get(':board_id')
+  @UseGuards(KanbanAccessGuard)
   @HttpCode(HttpStatus.OK)
   async getDetailBoard(
     @Param('board_id') board_id: string,
@@ -107,6 +113,7 @@ export class BoardController {
 
   @Post(':board_id')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @UseInterceptors(FileInterceptor('cover'))
   async createCard(
     @Param('board_id') board_id: string,
@@ -161,6 +168,7 @@ export class BoardController {
 
   @Put(':board_id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @UseInterceptors(FileInterceptor('cover'))
   async updateBoard(
     @CurrentUser() user: User,
@@ -185,6 +193,7 @@ export class BoardController {
 
   @Put(':board_id/card/:card_id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @UseInterceptors(FileInterceptor('cover'))
   async updateCard(
     @CurrentUser() user: User,
@@ -222,6 +231,7 @@ export class BoardController {
 
   @Delete(':board_id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   async deleteBoard(
     @CurrentUser() user: User,
     @Param('board_id') board_id: string,
@@ -235,6 +245,7 @@ export class BoardController {
 
   @Delete(':board_id/card/:card_id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   async deleteCard(
     @CurrentUser() user: User,
     @Param('board_id') board_id: string,
@@ -248,6 +259,7 @@ export class BoardController {
   }
 
   @Post(':board_id/member/invite')
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @HttpCode(HttpStatus.CREATED)
   async inviteMember(
     @CurrentUser() user: User,
@@ -270,6 +282,7 @@ export class BoardController {
 
   @Get(':board_id/link')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(KanbanAccessGuard)
   async getBoardLinkDetail(
     @Param('board_id') board_id: string,
   ): Promise<WebResponse<{ link: string }>> {
@@ -282,6 +295,7 @@ export class BoardController {
   }
 
   @Post(':board_id/link/generate')
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @HttpCode(HttpStatus.OK)
   async getBoardLink(
     @Param('board_id') board_id: string,
@@ -321,7 +335,22 @@ export class BoardController {
     });
   }
 
+  @Delete(':board_id/member/leave')
+  @UseGuards(KanbanAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  async leaveBoard(
+    @CurrentUser() user: User,
+    @Param('board_id') board_id: string,
+  ): Promise<WebResponse> {
+    await this.boardService.leaveTeam(board_id, user);
+    return new WebResponse({
+      statusCode: 200,
+      message: 'Member leave',
+    });
+  }
+
   @Delete(':board_id/member/:team_id')
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @HttpCode(HttpStatus.OK)
   async removeMember(
     @CurrentUser() user: User,
@@ -342,6 +371,7 @@ export class BoardController {
   }
 
   @Patch(':board_id/member/:team_id/role')
+  @UseGuards(KanbanAccessGuard, KanbanEditAccessGuard)
   @HttpCode(HttpStatus.OK)
   async changePermission(
     @CurrentUser() user: User,
@@ -363,20 +393,12 @@ export class BoardController {
     });
   }
 
-  @Delete(':board_id/member/leave')
-  @HttpCode(HttpStatus.OK)
-  async leaveBoard(
-    @CurrentUser() user: User,
-    @Param('board_id') board_id: string,
-  ): Promise<WebResponse> {
-    await this.boardService.leaveTeam(board_id, user);
-    return new WebResponse({
-      statusCode: 200,
-      message: 'Member leave',
-    });
-  }
-
   @Patch(':board_id/member/:team_id/transfer/ownership')
+  @UseGuards(
+    KanbanAccessGuard,
+    KanbanEditAccessGuard,
+    KanbanAccessOwnershipGuard,
+  )
   @HttpCode(HttpStatus.OK)
   async transferOwnership(
     @CurrentUser() user: User,

@@ -920,12 +920,17 @@ export class BoardService {
   }
 
   async leaveTeam(board_id: string, user: User): Promise<void> {
+    console.log(board_id, user);
     const team = await this.prismaService.kanbanTeam.findFirst({
       where: {
         board_id,
-        user_id: user.user_id,
+        User: {
+          user_id: user.user_id,
+        },
       },
     });
+
+    console.log(team, user);
 
     if (!team) {
       throw new NotFoundException('User not in team');
