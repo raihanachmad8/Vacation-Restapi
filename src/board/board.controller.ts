@@ -83,7 +83,6 @@ export class BoardController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @UseGuards(KanbanAccessGuard)
   async getBoard(
     @Query() filter: BoardFilter,
     @CurrentUser() user: User,
@@ -149,6 +148,7 @@ export class BoardController {
   }
 
   @Get(':board_id/card/:card_id')
+  @UseGuards(KanbanAccessGuard)
   @HttpCode(HttpStatus.OK)
   async getCard(
     @Param('board_id') board_id: string,
