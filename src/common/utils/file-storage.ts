@@ -8,9 +8,7 @@ import { FileVisibility } from '@prisma/client';
 import axios from 'axios';
 import mime from 'mime-types';
 
-export const appUrl = `${process.env.APP_PROTOCOL || 'http'}://${
-  process.env.APP_HOST || 'localhost'
-}:${process.env.APP_PORT || 8000}`;
+export const appUrl = `${process.env.APP_URL || 'http://localhost:8000'}`;
 
 function getBasePath(fileStorageOptions: FileStorageOptions): string {
   if (__dirname.includes('dist')) {
