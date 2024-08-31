@@ -69,6 +69,8 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
+    await this.removeExpiredTokens();
+
     if (bcrypt.compareSync(LoginRequest.password, user.password)) {
       const { access_token, refresh_token } = await this.generateToken(user);
 
@@ -204,6 +206,16 @@ export class AuthService {
         ],
         AND: {
           user_id: user_id,
+        },
+      },
+    });
+  }
+
+  private async removeExpiredTokens(): Promise<void> {
+    await this.prismaService.personalAccessToken.deleteMany({
+      where: {
+        expires_access_token: {
+          lt: new Date(),
         },
       },
     });
