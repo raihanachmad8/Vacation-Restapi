@@ -27,6 +27,8 @@ const prisma = new PrismaClient();
 async function main() {
   Promise.race([
     await UserSeeder.seed(prisma),
+    await HiddenGemsCategories.seed(prisma),
+    await EventCategories.seed(prisma),
     await ArticleSeeder.seed(prisma),
     await ArticleBookmarkSeeder.seed(prisma),
     await ArticleCommentSeeder.seed(prisma),
@@ -35,14 +37,12 @@ async function main() {
     await ArticleCommentReplySeeder.seed(prisma),
     await ArticleCommentReplyReplySeeder.seed(prisma),
     await ArticleCommentReplyLikeSeeder.seed(prisma),
-    await HiddenGemsCategories.seed(prisma),
     await HiddenGems.seed(prisma),
     await HiddenGemsOperationDay.seed(prisma),
     await HiddenGemsComments.seed(prisma),
     await HiddenGemsCommentsRating.seed(prisma),
     await HiddenGemsCommentsReplies.seed(prisma),
     await HiddenGemsCommentsRepliesReply.seed(prisma),
-    await EventCategories.seed(prisma),
     await Event.seed(prisma),
     await EventInterestSeeder.seed(prisma),
     await EventOperationDaysAndHours.seed(prisma),
