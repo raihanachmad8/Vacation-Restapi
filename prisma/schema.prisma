@@ -224,8 +224,8 @@ model HiddenGems {
   hidden_gem_id String   @id @default(uuid()) @db.Char(36)
   user_id       String   @db.Char(36)
   title         String   @db.VarChar(255)
-  price_start   Int      @db.Int
-  price_end     Int      @db.Int
+  price_start   Int      @db.Integer
+  price_end     Int      @db.Integer
   location      String   @db.VarChar(255)
   category_id   String   @db.Char(36)
   status        Status   @default(PENDING)
@@ -247,7 +247,7 @@ model HiddenGemsRating {
   hidden_gem_id String   @db.Char(36)
   comment_id    String   @db.Char(36)
   user_id       String   @db.Char(36)
-  rating        Float    @db.Float
+  rating        Float    @db.DoublePrecision
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
@@ -273,8 +273,8 @@ model OperatingDaysAndHours {
   operating_id  String    @id @default(uuid()) @db.Char(36)
   hidden_gem_id String    @db.Char(36)
   day           DayOfWeek
-  open_time     DateTime  @db.DateTime
-  close_time    DateTime  @db.DateTime
+  open_time     DateTime  
+  close_time    DateTime  
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
 
@@ -333,8 +333,8 @@ model EventCategory {
 model Event {
   event_id    String   @id @default(uuid()) @db.Char(36)
   title       String   @db.VarChar(255)
-  price_start Int      @db.Int
-  price_end   Int      @db.Int
+  price_start Int      @db.Integer
+  price_end   Int      @db.Integer
   location    String   @db.VarChar(255)
   status      Status   @default(PENDING)
   category_id String   @db.Char(36)
@@ -369,8 +369,8 @@ model EventOperationDaysAndHours {
   operating_id String    @id @default(uuid()) @db.Char(36)
   event_id     String    @db.Char(36)
   date         DateTime  @db.Date
-  open_time    DateTime  @db.DateTime
-  close_time   DateTime? @db.DateTime
+  open_time    DateTime  
+  close_time   DateTime? 
   created_at   DateTime  @default(now())
   updated_at   DateTime  @updatedAt
 
