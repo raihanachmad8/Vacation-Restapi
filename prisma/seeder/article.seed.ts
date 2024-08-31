@@ -23,7 +23,7 @@ export class ArticleSeeder extends ContractSeeder {
     });
 
     // Generate articles
-    const articles = Array.from({ length: 30 }, () => {
+    const articles = Array.from({ length: 15 }, () => {
       const tags = Array.from({ length: 3 }, () => faker.lorem.word());
 
       return {
