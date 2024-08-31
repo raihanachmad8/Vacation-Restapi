@@ -13,7 +13,7 @@ export class Event extends ContractSeeder {
 
     const categories = await prisma.eventCategory.findMany();
 
-    const Event = Array.from({ length: 40 }, () => {
+    const Event = Array.from({ length: 10 }, () => {
       const price_start = faker.number.int({ min: 100000, max: 1000000 });
       const price_end = faker.number.int({ min: price_start, max: 1000000 });
       return {

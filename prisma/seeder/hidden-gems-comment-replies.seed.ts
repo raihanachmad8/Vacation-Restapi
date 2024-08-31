@@ -10,7 +10,7 @@ export class HiddenGemsCommentsReplies extends ContractSeeder {
 
     const hiddenGemsComments = await prisma.hiddenGemsComment.findMany();
 
-    const HiddenGemsCommentReplies = Array.from({ length: 20 }, () => {
+    const HiddenGemsCommentReplies = Array.from({ length: 10 }, () => {
       return {
         comment_id: faker.helpers.arrayElement(hiddenGemsComments).comment_id,
         comment: faker.lorem.sentence(),

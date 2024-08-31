@@ -13,7 +13,7 @@ export class HiddenGems extends ContractSeeder {
 
     const categories = await prisma.hiddenGemsCategory.findMany();
 
-    const HiddenGems = Array.from({ length: 15 }, () => {
+    const HiddenGems = Array.from({ length: 10 }, () => {
       const price_start = faker.number.int({ min: 100000, max: 1000000 });
       const price_end = faker.number.int({ min: price_start, max: 1000000 });
       return {

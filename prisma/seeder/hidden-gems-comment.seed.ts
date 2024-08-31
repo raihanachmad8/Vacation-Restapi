@@ -13,7 +13,7 @@ export class HiddenGemsComments extends ContractSeeder {
     const hiddenGemsComments = [];
 
     for (const hiddenGem of hiddenGems) {
-      const numberOfUsers = faker.number.int({ min: 3, max: users.length });
+      const numberOfUsers = faker.number.int({ min: 1, max: users.length });
       const selectedUsers = faker.helpers
         .shuffle(users)
         .slice(0, numberOfUsers);

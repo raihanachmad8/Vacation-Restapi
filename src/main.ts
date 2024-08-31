@@ -9,7 +9,6 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   app.useLogger(logger);
-  app.setGlobalPrefix('api');
   app.enableShutdownHooks();
   app.enableCors({
     origin: true,

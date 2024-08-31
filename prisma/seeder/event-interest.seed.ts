@@ -11,7 +11,7 @@ export class EventInterestSeeder extends ContractSeeder {
 
     const eventInterests = await events.map((event) => {
       const randomUniqueUser = Array.from(
-        { length: faker.number.int({ min: 2, max: users.length }) },
+        { length: faker.number.int({ min: 1, max: users.length }) },
         (_, index) => {
           return users[index];
         },
